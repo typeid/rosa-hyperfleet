@@ -78,3 +78,8 @@ variable "repository_branch" {
   description = "Git branch to use for cluster configuration"
   default     = "main"
 }
+
+variable "codebuild_image" {
+  type        = string
+  description = "ECR image URI for CodeBuild projects (platform image with pre-installed tools)"
+}

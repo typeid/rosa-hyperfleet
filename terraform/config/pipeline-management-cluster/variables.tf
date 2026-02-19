@@ -88,3 +88,8 @@ variable "regional_aws_account_id" {
   type        = string
   description = "AWS account ID where the regional cluster is hosted"
 }
+
+variable "codebuild_image" {
+  type        = string
+  description = "ECR image URI for CodeBuild projects (platform image with pre-installed tools)"
+}

@@ -341,9 +341,9 @@ resource "aws_codebuild_project" "management_validate" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+    image                       = var.codebuild_image
     type                        = "LINUX_CONTAINER"
-    image_pull_credentials_type = "CODEBUILD"
+    image_pull_credentials_type = "SERVICE_ROLE"
 
     environment_variable {
       name  = "TARGET_ACCOUNT_ID"
@@ -405,9 +405,9 @@ resource "aws_codebuild_project" "management_apply" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+    image                       = var.codebuild_image
     type                        = "LINUX_CONTAINER"
-    image_pull_credentials_type = "CODEBUILD"
+    image_pull_credentials_type = "SERVICE_ROLE"
 
     environment_variable {
       name  = "TARGET_ACCOUNT_ID"
@@ -469,9 +469,9 @@ resource "aws_codebuild_project" "management_bootstrap" {
 
   environment {
     compute_type                = "BUILD_GENERAL1_SMALL"
-    image                       = "aws/codebuild/amazonlinux2-x86_64-standard:4.0"
+    image                       = var.codebuild_image
     type                        = "LINUX_CONTAINER"
-    image_pull_credentials_type = "CODEBUILD"
+    image_pull_credentials_type = "SERVICE_ROLE"
     privileged_mode             = true # Required for Docker builds
 
     environment_variable {
