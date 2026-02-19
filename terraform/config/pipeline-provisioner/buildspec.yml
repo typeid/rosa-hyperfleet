@@ -157,21 +157,21 @@ phases:
         echo "Found ${#region_dirs[@]} region(s) in environment '${ENVIRONMENT}'"
         echo ""
 
-        # Process each region_alias directory in the target environment
+        # Process each region_deployment directory in the target environment
         for region_dir in deploy/${ENVIRONMENT}/*/; do
             [ -d "$region_dir" ] || continue
 
-            # Extract region_alias from directory path
-            # e.g., deploy/integration/us-east-1/ -> REGION_ALIAS=us-east-1
-            REGION_ALIAS=$(basename "$region_dir")
+            # Extract region_deployment from directory path
+            # e.g., deploy/integration/us-east-1/ -> REGION_DEPLOYMENT=us-east-1
+            REGION_DEPLOYMENT=$(basename "$region_dir")
 
             echo "=========================================="
-            echo "Processing: $ENVIRONMENT / $REGION_ALIAS"
+            echo "Processing: $ENVIRONMENT / $REGION_DEPLOYMENT"
             echo "=========================================="
 
             # 1. Check for regional.json in this region
             if [ -f "${region_dir}terraform/regional.json" ]; then
-                echo "Found regional.json for ${ENVIRONMENT}-${REGION_ALIAS}"
+                echo "Found regional.json for ${ENVIRONMENT}-${REGION_DEPLOYMENT}"
 
                 REGIONAL_CONFIG="${region_dir}terraform/regional.json"
 
@@ -190,14 +190,14 @@ phases:
                 [ -n "$TARGET_ALIAS" ] && echo "  Target Alias: $TARGET_ALIAS"
                 echo "  Terraform Vars: app_code=$APP_CODE, service_phase=$SERVICE_PHASE, cost_center=$COST_CENTER"
 
-                echo "Provisioning Regional Cluster Pipeline for ${ENVIRONMENT}-${REGION_ALIAS}..."
+                echo "Provisioning Regional Cluster Pipeline for ${ENVIRONMENT}-${REGION_DEPLOYMENT}..."
 
                 cd terraform/config/pipeline-regional-cluster
 
                 terraform init \
                     -reconfigure \
                     -backend-config="bucket=$TF_STATE_BUCKET" \
-                    -backend-config="key=pipelines/regional-${ENVIRONMENT}-${REGION_ALIAS}.tfstate" \
+                    -backend-config="key=pipelines/regional-${ENVIRONMENT}-${REGION_DEPLOYMENT}.tfstate" \
                     -backend-config="region=$TF_STATE_REGION" \
                     -backend-config="use_lockfile=true"
 
@@ -215,12 +215,12 @@ phases:
                 TF_VARS="$TF_VARS -var=repository_branch=${GITHUB_BRANCH}"
 
                 # Apply with retry logic
-                if retry_terraform_apply "pipelines/regional-${ENVIRONMENT}-${REGION_ALIAS}.tfstate"; then
+                if retry_terraform_apply "pipelines/regional-${ENVIRONMENT}-${REGION_DEPLOYMENT}.tfstate"; then
                     cd ../../..
-                    echo "✅ Regional pipeline created for ${ENVIRONMENT}-${REGION_ALIAS}"
+                    echo "✅ Regional pipeline created for ${ENVIRONMENT}-${REGION_DEPLOYMENT}"
                 else
                     cd ../../..
-                    echo "❌ Failed to create regional pipeline for ${ENVIRONMENT}-${REGION_ALIAS} after retries"
+                    echo "❌ Failed to create regional pipeline for ${ENVIRONMENT}-${REGION_DEPLOYMENT} after retries"
                     echo "⏭️  Continuing with next region..."
                     continue
                 fi
@@ -230,7 +230,7 @@ phases:
 
             # 2. Check for management/*.json files in this region
             if [ -d "${region_dir}terraform/management" ]; then
-                echo "Checking for management cluster configs in ${ENVIRONMENT}-${REGION_ALIAS}..."
+                echo "Checking for management cluster configs in ${ENVIRONMENT}-${REGION_DEPLOYMENT}..."
 
                 for mc_config in ${region_dir}terraform/management/*.json; do
                     [ -e "$mc_config" ] || continue
@@ -262,14 +262,14 @@ phases:
                     [ -n "$TARGET_ALIAS" ] && echo "  Target Alias: $TARGET_ALIAS"
                     echo "  Terraform Vars: app_code=$APP_CODE, service_phase=$SERVICE_PHASE, cost_center=$COST_CENTER, cluster_id=$CLUSTER_ID, regional_aws_account_id=$REGIONAL_AWS_ACCOUNT_ID"
 
-                    echo "Provisioning Management Cluster Pipeline for $CLUSTER_NAME in ${ENVIRONMENT}-${REGION_ALIAS}..."
+                    echo "Provisioning Management Cluster Pipeline for $CLUSTER_NAME in ${ENVIRONMENT}-${REGION_DEPLOYMENT}..."
 
                     cd terraform/config/pipeline-management-cluster
 
                     terraform init \
                         -reconfigure \
                         -backend-config="bucket=$TF_STATE_BUCKET" \
-                        -backend-config="key=pipelines/management-${ENVIRONMENT}-${REGION_ALIAS}-${CLUSTER_NAME}.tfstate" \
+                        -backend-config="key=pipelines/management-${ENVIRONMENT}-${REGION_DEPLOYMENT}-${CLUSTER_NAME}.tfstate" \
                         -backend-config="region=$TF_STATE_REGION" \
                         -backend-config="use_lockfile=true"
 
@@ -289,9 +289,9 @@ phases:
                     TF_VARS="$TF_VARS -var=repository_branch=${GITHUB_BRANCH}"
 
                     # Apply with retry logic
-                    if retry_terraform_apply "pipelines/management-${ENVIRONMENT}-${REGION_ALIAS}-${CLUSTER_NAME}.tfstate"; then
+                    if retry_terraform_apply "pipelines/management-${ENVIRONMENT}-${REGION_DEPLOYMENT}-${CLUSTER_NAME}.tfstate"; then
                         cd ../../..
-                        echo "✅ Management pipeline created for $CLUSTER_NAME in ${ENVIRONMENT}-${REGION_ALIAS}"
+                        echo "✅ Management pipeline created for $CLUSTER_NAME in ${ENVIRONMENT}-${REGION_DEPLOYMENT}"
                     else
                         cd ../../..
                         echo "❌ Failed to create management pipeline for $CLUSTER_NAME after retries"

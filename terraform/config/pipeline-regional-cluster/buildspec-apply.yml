@@ -121,7 +121,7 @@ phases:
         echo ""
 
         # Export required environment variables for Makefile target
-        # For regional clusters, extract region_alias from generated terraform config
+        # For regional clusters, extract region_deployment from generated terraform config
         export ENVIRONMENT="${ENVIRONMENT:-staging}"
         RC_CONFIG_FILE="deploy/${ENVIRONMENT}/${TARGET_REGION}/terraform/regional.json"
         if [ ! -f "$RC_CONFIG_FILE" ]; then
@@ -130,8 +130,8 @@ phases:
             exit 1
         fi
 
-        export REGION_ALIAS=$(jq -r '.region_alias' "$RC_CONFIG_FILE")
-        echo "Extracted REGION_ALIAS from config: $REGION_ALIAS"
+        export REGION_DEPLOYMENT=$(jq -r '.region_deployment' "$RC_CONFIG_FILE")
+        echo "Extracted REGION_DEPLOYMENT from config: $REGION_DEPLOYMENT"
 
         # Run provisioning (in same shell to preserve exports)
         make pipeline-provision-regional

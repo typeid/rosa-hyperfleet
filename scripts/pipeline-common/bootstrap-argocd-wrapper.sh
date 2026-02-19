@@ -50,9 +50,9 @@ if [[ -z "${ENVIRONMENT:-}" ]]; then
 fi
 
 # Export standardized environment variables for bootstrap script
-# The script expects: ENVIRONMENT, REGION_ALIAS, AWS_REGION
+# The script expects: ENVIRONMENT, REGION_DEPLOYMENT, AWS_REGION
 export ENVIRONMENT="${ENVIRONMENT}"
-export REGION_ALIAS="${TARGET_ALIAS}"
+export REGION_DEPLOYMENT="${TARGET_ALIAS}"
 export AWS_REGION="${TARGET_REGION}"
 
 # Set ASSUME_ROLE_ARN for cross-account bootstrap (if needed)
@@ -65,7 +65,7 @@ fi
 
 echo "Bootstrap environment configuration:"
 echo "  ENVIRONMENT: ${ENVIRONMENT}"
-echo "  REGION_ALIAS: ${REGION_ALIAS}"
+echo "  REGION_DEPLOYMENT: ${REGION_DEPLOYMENT}"
 echo "  AWS_REGION: ${AWS_REGION}"
 echo ""
 
