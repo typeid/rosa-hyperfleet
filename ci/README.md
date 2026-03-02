@@ -35,18 +35,11 @@ Credentials are stored in Vault at `kv/selfservice/cluster-secrets-rosa-regional
 
 ## Nightly Resources Janitor
 
-The nightly e2e tests create ~72 types of AWS resources across two accounts. Teardown relies on `terraform destroy`, which can fail and leak resources. The **nightly-resources-janitor** job is a weekly fallback that purges everything except the CI identity (`nightly-e2e` IAM user) using [aws-nuke](https://github.com/ekristen/aws-nuke).
-
-- **Schedule**: Sundays at 12:00 UTC (`0 12 * * 0`)
-- **Prow job**: `periodic-ci-openshift-online-rosa-regional-platform-main-nightly-resources-janitor`
-- **Script**: `ci/nightly-resources-janitor.sh` — runs `ci/janitor/purge-aws-account.sh` against both CI accounts
-- **Dry-run toggle**: Set `DRY_RUN=true` at the top of `ci/nightly-resources-janitor.sh` to list resources without deleting
+The nightly e2e tests creates AWS resources across two accounts. Teardown relies on `terraform destroy`, which can fail and leak resources. The **nightly-resources-janitor** job is a weekly fallback that purges everything except resources we need to remain between tests using [aws-nuke](https://github.com/ekristen/aws-nuke).
 
 ### What is preserved
 
-- IAM User `nightly-e2e` (access keys, policies, group memberships)
-- IAM Role `OrganizationAccountAccessRole` (and its policies)
-- AWS service-linked roles (`/aws-service-role/*`)
+See `./ci/aws-nuke-config.yaml`.
 
 ### Running locally
 

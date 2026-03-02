@@ -11,8 +11,7 @@ set -euo pipefail
 # Credentials are mounted at /var/run/rosa-credentials/ by ci-operator.
 # =============================================================================
 
-# TODO(Claudio): Set to false once we're confident
-DRY_RUN=true
+DRY_RUN=false
 
 export AWS_PAGER=""
 
