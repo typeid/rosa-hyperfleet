@@ -16,6 +16,11 @@ phases:
       - |
         set -euo pipefail
 
+        if [ "${IS_DESTROY:-false}" == "true" ]; then
+            echo "IS_DESTROY=true — skipping ArgoCD bootstrap (cluster is being destroyed)"
+            exit 0
+        fi
+
         # Pre-flight setup (validates env vars, inits account helpers)
         source scripts/pipeline-common/setup-apply-preflight.sh
 
