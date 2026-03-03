@@ -143,7 +143,4 @@ phases:
             echo "Response: $RESPONSE"
             exit 1
         fi
-
-  post_build:
-    commands:
-      - echo "Management cluster registration complete."
+        echo "Management cluster registration complete."

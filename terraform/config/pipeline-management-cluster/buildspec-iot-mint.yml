@@ -53,9 +53,9 @@ phases:
             -backend-config="use_lockfile=true"
 
         if [ "${IS_DESTROY:-false}" == "true" ]; then
-            echo "⚠️ DESTRUCTION MODE — destroying IoT resources"
+            echo "Destroying IoT resources"
             terraform destroy -var-file="$TEMP_TFVARS" -auto-approve
-            echo "✅ IoT resources destroyed"
+            echo "IoT resources destroyed successfully"
         else
             terraform plan -var-file="$TEMP_TFVARS" -out=tfplan
             terraform apply tfplan
@@ -66,9 +66,7 @@ phases:
 
         rm -f "$TEMP_TFVARS"
 
-  post_build:
-    commands:
-      - echo "IoT mint stage complete."
+        echo "IoT mint stage complete."
 
 artifacts:
   files:

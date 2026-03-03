@@ -128,32 +128,27 @@ phases:
 
         set +e
         if [ "${IS_DESTROY:-false}" == "true" ]; then
-            echo "⚠️ DESTRUCTION MODE ENABLED"
+            echo "Destroying management cluster"
             make pipeline-destroy-management
         else
             make pipeline-provision-management
         fi
-        PROVISION_STATUS=$?
+        MAKE_TARGET_STATUS=$?
         set -e
 
-        if [ $PROVISION_STATUS -ne 0 ]; then
-            echo "❌ Infrastructure action failed with exit code $PROVISION_STATUS"
-            exit $PROVISION_STATUS
+        if [ $MAKE_TARGET_STATUS -ne 0 ]; then
+            echo "Infrastructure action failed with exit code $MAKE_TARGET_STATUS"
+            exit $MAKE_TARGET_STATUS
         fi
 
         # Clean up temp cert files
         rm -f "${TF_VAR_maestro_agent_cert_file:-}" "${TF_VAR_maestro_agent_config_file:-}"
 
-        echo "✅ Infrastructure action complete."
         if [ "${IS_DESTROY:-false}" == "true" ]; then
-             echo "✅ Management cluster destroyed successfully."
+             echo "Management cluster destroyed successfully."
         else
-             echo "✅ Management cluster provisioned successfully."
+             echo "Management cluster provisioned successfully."
         fi
-
-  post_build:
-    commands:
-      - echo "Infrastructure deployment complete."
 artifacts:
   files:
     - '**/*'

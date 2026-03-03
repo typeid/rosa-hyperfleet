@@ -41,7 +41,5 @@ phases:
         # Bootstrap ArgoCD (already in target account, no cross-account assume needed)
         ./scripts/pipeline-common/bootstrap-argocd-wrapper.sh management-cluster "${TARGET_ACCOUNT_ID}"
 
-  post_build:
-    commands:
-      - echo "ArgoCD bootstrap complete."
-      - echo "Management cluster is now fully provisioned and ready for use."
+        echo "ArgoCD bootstrap complete."
+        echo "Management cluster is now fully provisioned and ready for use."

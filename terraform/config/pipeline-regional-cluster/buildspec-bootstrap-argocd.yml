@@ -37,10 +37,7 @@ phases:
         # Bootstrap ArgoCD (already in target account, no cross-account assume needed)
         ./scripts/pipeline-common/bootstrap-argocd-wrapper.sh regional-cluster "${TARGET_ACCOUNT_ID}"
 
-  post_build:
-    commands:
-      - echo "ArgoCD bootstrap complete."
-      - echo "Regional cluster is now fully provisioned and ready for use."
+        echo "ArgoCD bootstrap complete. Regional cluster is now fully provisioned and ready for use."
 
 artifacts:
   files: []

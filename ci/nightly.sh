@@ -313,6 +313,7 @@ fi
 ## ===============================
 
 log_phase "Running Validation"
+unset AWS_SESSION_TOKEN
 export AWS_ACCESS_KEY_ID=$(< "${CREDS_DIR}/regional_access_key")
 export AWS_SECRET_ACCESS_KEY=$(< "${CREDS_DIR}/regional_secret_key")
 # TODO(typeid): we need to get the right API url and MC ID here.
