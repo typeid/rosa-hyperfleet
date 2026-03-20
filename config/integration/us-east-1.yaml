@@ -1,2 +1,5 @@
+delete: true
+
 management_clusters:
-  mc01: {}
+  mc01:
+    delete: true
