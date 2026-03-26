@@ -133,7 +133,7 @@ resource "aws_eks_pod_identity_association" "external_secrets_operator" {
 }
 
 # =============================================================================
-# VPC Module - provisions first, unblocks everything else
+# VPC Module
 # =============================================================================
 
 module "vpc" {
@@ -143,7 +143,7 @@ module "vpc" {
 }
 
 # =============================================================================
-# EKS Cluster - depends only on VPC
+# EKS Cluster
 # =============================================================================
 
 module "regional_cluster" {
@@ -306,7 +306,7 @@ module "maestro_infrastructure" {
 }
 
 # =============================================================================
-# Authorization Module - only needs resource_name_base + cluster_name
+# Authorization Module
 # =============================================================================
 
 module "authz" {
