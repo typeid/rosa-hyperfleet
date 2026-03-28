@@ -158,7 +158,7 @@ class EphemeralEnvOrchestrator:
         git.resync_ci_branch(self.ci_prefix)
 
         self._inject_ephemeral_config(git)
-        git.render_and_push("ci: resync ephemeral environment config")
+        git.render_and_push("ci: resync ephemeral environment config", force=True)
 
     def collect_codebuild_logs(self):
         """Download CloudWatch logs for all CodeBuild projects matching our CI prefix.

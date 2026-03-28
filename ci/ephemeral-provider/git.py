@@ -175,10 +175,12 @@ class GitManager:
         log.info("Checked out existing CI branch: %s on %s", self.ci_branch, self.fork_repo)
 
     def resync_ci_branch(self, ci_prefix: str):
-        """Rebase the CI branch onto the latest source branch and force-push.
+        """Reset the CI branch to the latest source branch tip.
 
-        Checks out the fork's CI branch, adds the source repo as upstream,
-        fetches the latest source branch, rebases onto it, and force-pushes.
+        Checks out the fork's CI branch, fetches the latest source branch,
+        and hard-resets to it. Does NOT push — the caller is expected to
+        re-inject config, render, and push in a single commit via
+        render_and_push().
 
         Args:
             ci_prefix: The CI prefix used during provisioning (e.g. 'ci-a1b2c3').
@@ -191,15 +193,10 @@ class GitManager:
         log.info("Fetching latest %s from upstream (%s)", self.source_branch, self.source_repo)
         self._run_git("fetch", "upstream", self.source_branch, auth=True)
 
-        log.info("Rebasing %s onto upstream/%s", self.ci_branch, self.source_branch)
-        self._run_git("rebase", f"upstream/{self.source_branch}")
+        log.info("Resetting %s to upstream/%s", self.ci_branch, self.source_branch)
+        self._run_git("reset", "--hard", f"upstream/{self.source_branch}")
 
-        log.info("Force-pushing %s to fork", self.ci_branch)
-        self._run_git("push", "--force", "ci", self.ci_branch, auth=True)
-
-        log.info("Resync complete: %s rebased onto %s/%s", self.ci_branch, self.source_repo, self.source_branch)
-
-    def push(self, message: str):
+    def push(self, message: str, force: bool = False):
         """Stage all changes, commit, and push to the CI branch."""
         self._run_git("add", "-A")
 
@@ -209,10 +206,13 @@ class GitManager:
             return
 
         self._run_git("commit", "-m", message)
-        self._run_git("push", "ci", self.ci_branch, auth=True)
+        push_cmd = ["push", "ci", self.ci_branch]
+        if force:
+            push_cmd.insert(1, "--force")
+        self._run_git(*push_cmd, auth=True)
         log.info("Pushed: %s", message)
 
-    def render_and_push(self, message: str):
+    def render_and_push(self, message: str, force: bool = False):
         """Run render.py in the work directory, then commit and push."""
         render_script = self.work_dir / "scripts" / "render.py"
         log.info("Running render.py (ci_prefix=%s)", self.ci_prefix)
@@ -234,7 +234,7 @@ class GitManager:
                 f"render.py failed (exit {result.returncode})\n"
                 f"stdout: {result.stdout}\nstderr: {result.stderr}"
             )
-        self.push(message)
+        self.push(message, force=force)
 
     def modify_config(self, environment: str, region: str, callback):
         """Load a region config file, apply callback modifications, render, and push.
