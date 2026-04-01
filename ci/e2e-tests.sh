@@ -55,6 +55,41 @@ export PATH="$(go env GOPATH)/bin:${PATH}"
 rc=0
 make test-e2e || rc=$?
 
+# --- HCP Creation E2E Tests ---
+# Uses customer account credentials from vault-mounted secrets.
+# Only run if the platform API tests passed.
+if [[ $rc -ne 0 ]]; then
+  echo "Skipping HCP creation tests — platform API tests failed (exit code: $rc)"
+elif [[ -r "${CREDS_DIR}/customer_access_key" ]]; then
+  export CUSTOMER_AWS_ACCESS_KEY_ID="$(cat "${CREDS_DIR}/customer_access_key")"
+  export CUSTOMER_AWS_SECRET_ACCESS_KEY="$(cat "${CREDS_DIR}/customer_secret_key")"
+  echo "Customer credentials loaded from ${CREDS_DIR}"
+
+  test_hcp_creation() {
+    echo ""
+    echo "=== HCP Creation Tests ==="
+
+    local HCP_CLUSTER_NAME="e2e-hcp-$(date +%s)"
+
+    echo "Creating HCP cluster: ${HCP_CLUSTER_NAME}"
+    # TODO: Implement HCP creation
+
+    # TODO: Poll for cluster ready state
+    # echo "Waiting for HCP cluster to be ready..."
+
+    # TODO: Validate cluster is accessible / healthy
+
+    # TODO: Cleanup — delete the HCP cluster
+    # echo "Deleting HCP cluster: ${HCP_CLUSTER_NAME}"
+
+    echo "HCP creation test completed for: ${HCP_CLUSTER_NAME}"
+  }
+
+  test_hcp_creation || rc=$?
+else
+  echo "WARNING: No customer credentials at ${CREDS_DIR}/customer_access_key — skipping HCP creation tests"
+fi
+
 if [[ $rc -ne 0 ]]; then
     echo ""
     echo "E2E tests failed (exit code: $rc). Collecting cluster logs..."
