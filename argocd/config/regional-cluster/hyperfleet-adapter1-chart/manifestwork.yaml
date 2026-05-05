@@ -110,7 +110,7 @@ spec:
             # - https://github.com/openshift/hypershift/pull/8357 / OCPBUGS-84572
             # We cannot use 5.0.0 because it just branched and is in a broken state.
             # Once we backport the above fixes to 4.22, we can use a somewhat stable 4.22 build.
-            hypershift.openshift.io/control-plane-operator-image: quay.io/cbusse_openshift/control-plane-operator:eks-compat-4.22-a1fa3e6cfa
+            hypershift.openshift.io/control-plane-operator-image: quay.io/cbusse_openshift/control-plane-operator:eks-compat-4.22-e8a9777d2e
         spec:
           infraID: "{{ .clusterId }}"
           dns:
