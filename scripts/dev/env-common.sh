@@ -18,17 +18,45 @@
 
 die() { echo "Error: $*" >&2; exit 1; }
 
-# Resolve temporary credentials from an AWS profile.
+# Resolve the admin credential_process profile to get base SAML credentials.
+# The credential_process is not cached by the AWS CLI, so this always returns
+# fresh credentials.
+# Sets: _ADMIN_AK, _ADMIN_SK, _ADMIN_ST
+resolve_admin_creds() {
+    [[ -n "${_ADMIN_AK:-}" ]] && return 0
+    echo "Resolving admin credentials..."
+    local creds creds_err
+    creds_err=$(mktemp)
+    creds=$(aws configure export-credentials --profile rrp-ephemeral-admin --format process 2>"$creds_err") \
+        || { local err; err=$(<"$creds_err"); rm -f "$creds_err"; die "Failed to resolve admin credentials:\n$err"; }
+    rm -f "$creds_err"
+    _ADMIN_AK=$(echo "$creds" | jq -r '.AccessKeyId')
+    _ADMIN_SK=$(echo "$creds" | jq -r '.SecretAccessKey')
+    _ADMIN_ST=$(echo "$creds" | jq -r '.SessionToken // empty')
+}
+
+# Assume a role using the admin credentials, bypassing the CLI's profile cache.
 # Sets: _CRED_AK, _CRED_SK, _CRED_ST
 resolve_creds() {
     local profile="$1"
     echo "Resolving credentials for profile $profile..."
-    local creds
-    creds=$(aws configure export-credentials --profile "$profile" --format process 2>/dev/null) \
-        || die "Failed to resolve credentials for profile $profile. Have you authenticated?"
-    _CRED_AK=$(echo "$creds" | jq -r '.AccessKeyId')
-    _CRED_SK=$(echo "$creds" | jq -r '.SecretAccessKey')
-    _CRED_ST=$(echo "$creds" | jq -r '.SessionToken // empty')
+
+    local role_arn
+    role_arn=$(aws configure get role_arn --profile "$profile" 2>/dev/null) \
+        || die "No role_arn found for profile $profile"
+
+    resolve_admin_creds
+
+    local creds creds_err
+    creds_err=$(mktemp)
+    creds=$(AWS_ACCESS_KEY_ID="$_ADMIN_AK" AWS_SECRET_ACCESS_KEY="$_ADMIN_SK" AWS_SESSION_TOKEN="$_ADMIN_ST" \
+        aws sts assume-role --role-arn "$role_arn" --role-session-name "rrp-dev-$$" \
+        --duration-seconds 3600 --output json 2>"$creds_err") \
+        || { local err; err=$(<"$creds_err"); rm -f "$creds_err"; die "Failed to assume role $role_arn:\n$err"; }
+    rm -f "$creds_err"
+    _CRED_AK=$(echo "$creds" | jq -r '.Credentials.AccessKeyId')
+    _CRED_SK=$(echo "$creds" | jq -r '.Credentials.SecretAccessKey')
+    _CRED_ST=$(echo "$creds" | jq -r '.Credentials.SessionToken')
 }
 
 # Build the CI container image if not already present.
@@ -94,6 +122,8 @@ parse_account() {
 # Sets: AWS_CONFIG_FILE, AWS_SHARED_CREDENTIALS_FILE, _aws_config_dir, _internal_repo
 # Caller should write profile heredoc to $AWS_CONFIG_FILE after calling this.
 init_aws_config() {
+    unset AWS_PROFILE AWS_DEFAULT_PROFILE
+
     _internal_repo="${INTERNAL_REPO:-$(cd "$REPO_ROOT/../rosa-regional-platform-internal" 2>/dev/null && pwd || true)}"
     [[ -n "$_internal_repo" ]] \
         || die "rosa-regional-platform-internal not found at $REPO_ROOT/../rosa-regional-platform-internal. Set INTERNAL_REPO."
