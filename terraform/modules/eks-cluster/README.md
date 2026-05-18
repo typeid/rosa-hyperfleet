@@ -7,7 +7,7 @@ Creates private EKS clusters with security-first configuration and standardized 
 - **Deterministic Resource Naming**: Uses `cluster_id` for all resource names (e.g., `regional`, `mc01`)
 - **Provider-Level Tagging**: Enforces required organizational tags via AWS provider default_tags
 - **Fully Private Clusters**: EKS control plane with private endpoint only
-- **GitOps Bootstrap**: Automated ArgoCD installation via Lambda for self-management
+- **GitOps Bootstrap**: Automated ArgoCD installation via ECS Fargate task for self-management
 - **Security Hardening**: KMS encryption, IMDSv2 enforcement, and network segmentation
 - **High Availability**: Multi-AZ NAT Gateways for fault-tolerant egress connectivity
 
@@ -132,21 +132,27 @@ module "regional_cluster" {
 
 When `bootstrap_enabled` is `true`, the module automatically installs ArgoCD for GitOps management:
 
-1. **Lambda Function**: Executes within cluster VPC for secure bootstrap operations
+1. **ECS Fargate Task**: Executes within cluster VPC for secure bootstrap operations
 2. **Tool Installation**: Downloads kubectl, helm, and AWS CLI at runtime
-3. **ArgoCD Installation**: Installs ArgoCD via Helm with cluster-only access
-4. **GitOps Configuration**: Creates Application of Applications for self-management
-5. **Synchronous Execution**: Bootstrap completes during `terraform apply` with visible logs
+3. **FIPS Node Setup**: Applies FIPS NodeClass and cluster-type-specific workloads NodePool
+4. **Addon Wait**: Waits for CoreDNS and metrics-server addons to become Active
+5. **ArgoCD Installation**: Installs ArgoCD via Helm with cluster-only access
+6. **GitOps Configuration**: Creates Application of Applications for self-management
+7. **Synchronous Execution**: Bootstrap completes during `terraform apply` with visible logs
 
 ### Bootstrap Process
 
-The Lambda function:
+The ECS bootstrap task:
 
 - Runs in the cluster's private subnets for network access
 - Updates kubeconfig using EKS access entries and Pod Identity
+- Applies a FIPS-validated Bottlerocket NodeClass (`fips`) and a workloads NodePool
+- Waits for CoreDNS and metrics-server to be Active (scheduled on the built-in `system` pool)
 - Installs ArgoCD using Helm from the official repository
 - Creates bootstrap application pointing to your repository
 - Enables ArgoCD to take over cluster management
+
+For the FIPS node strategy, including why the built-in `system` pool is retained and `general-purpose` is disabled, see [FIPS-Only EKS Compute](../../../docs/design/fips-eks-compute.md).
 
 ## Requirements
 

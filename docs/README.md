@@ -23,6 +23,7 @@ Detailed architecture and rationale for key technical decisions:
 | Document                                                                           | Topic                                                        |
 | ---------------------------------------------------------------------------------- | ------------------------------------------------------------ |
 | [ECS Fargate Bootstrap](design/fully-private-eks-bootstrap.md)                     | How fully private EKS clusters are bootstrapped via ECS      |
+| [FIPS-Only EKS Compute](design/fips-eks-compute.md)                                | FIPS NodeClass/NodePool strategy for FedRAMP workload nodes  |
 | [GitOps Cluster Configuration](design/gitops-cluster-configuration.md)             | ApplicationSet pattern, progressive deployment, config modes |
 | [Maestro MQTT Resource Distribution](design/maestro-mqtt-resource-distribution.md) | RC-to-MC communication via AWS IoT Core MQTT                 |
 | [Pipeline-Based Lifecycle](design/pipeline-based-lifecycle.md)                     | CodePipeline hierarchy for cluster provisioning              |
