@@ -13,6 +13,9 @@ kube-prometheus-stack:
     enabled: false
 
   prometheusOperator:
+    admissionWebhooks:
+      patch:
+        ttlSecondsAfterFinished: 60
     resources:
       requests:
         cpu: 50m
