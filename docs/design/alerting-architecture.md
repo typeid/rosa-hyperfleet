@@ -283,25 +283,9 @@ Platform alerting rules are deployed as PrometheusRule CRs via the `alerting-rul
 
 See [Adding Alerting Rules](../adding-alerting-rules.md) for a developer guide on creating new rules.
 
-### Error Budget Burn Rate Pattern
+### Alert Patterns and Current Rules
 
-SLA alerts use multi-window, multi-burn-rate alerting (from the Google SRE workbook) instead of simple threshold alerts. A threshold on a 30-day average only fires after the budget is already exhausted. Burn rate alerts detect unsustainable consumption while budget remains:
-
-| Alert | Burn rate | Long window | Short window | `for` | Detection time |
-| ----- | --------- | ----------- | ------------ | ----- | -------------- |
-| Fast  | 14.4x     | 5m          | 2m           | 1m    | ~6 minutes     |
-| Slow  | 6x        | 30m         | 5m           | 2m    | ~32 minutes    |
-
-The long window detects sustained problems; the short window confirms the issue is still active (preventing false positives from brief historical blips). Both windows must exceed the threshold for the alert to fire.
-
-For a 99.95% SLA target, the error budget is 0.05%. The threshold formula: `error_rate > burn_rate_factor * (1 - sla_target)`.
-
-### Current Alerts
-
-| Alert                                | Source metric                                                                  | SLA target | Severity |
-| ------------------------------------ | ------------------------------------------------------------------------------ | ---------- | -------- |
-| `HCPAvailabilityErrorBudgetFastBurn` | `kube_customresource_hostedcluster_status_condition` (HostedCluster Available) | 99.95%     | critical |
-| `HCPAvailabilityErrorBudgetSlowBurn` | `kube_customresource_hostedcluster_status_condition` (HostedCluster Available) | 99.95%     | critical |
+SLA alerts use multi-window, multi-burn-rate alerting from the [Google SRE Workbook](https://sre.google/workbook/alerting-on-slos/). See `argocd/config/regional-cluster/alerting-rules/templates/` for current alert definitions and [Adding Alerting Rules](../adding-alerting-rules.md) for the developer guide.
 
 ## Open Questions
 
