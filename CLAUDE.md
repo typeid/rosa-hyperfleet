@@ -169,6 +169,10 @@ See [`docs/development-environment.md`](docs/development-environment.md) for ful
 - **ArgoCD Health**: Verify applications sync successfully
 - **Security Review**: Use architect agent for security-sensitive changes
 
+### Alerting Rules
+
+Platform alerting and recording rules are defined as PrometheusRule CRs in the `alerting-rules` chart (`argocd/config/regional-cluster/alerting-rules/templates/`). Rules are evaluated by Thanos Ruler against Thanos Query. See [docs/adding-alerting-rules.md](docs/adding-alerting-rules.md) for a developer guide on adding new rules, including the error budget burn rate pattern used for SLA alerts.
+
 ### Important Files and Patterns
 
 - `Makefile` - Standardized provisioning commands

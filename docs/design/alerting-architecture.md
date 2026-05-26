@@ -253,6 +253,40 @@ No AlertManager changes required. No bridge changes required. The PagerDuty rout
 - **SNS publish fails**: Bridge should retry with backoff and log failures. Consider a local buffer or DLQ within the bridge for extreme cases.
 - **Subscriber is down**: Out of scope. Once an alert is published to the SNS topic, delivery to subscribers is the responsibility of SNS and the subscriber. The platform's obligation ends at successful SNS publish.
 
+## Cross-Cluster Alert Evaluation via Thanos Ruler
+
+### Problem
+
+RC Prometheus only sees its own local TSDB. Metrics from Management Clusters are ingested by Thanos Receive via `remote_write` and are only queryable through Thanos Query. This means RC Prometheus cannot evaluate alerting rules that reference MC metrics — such as HCP availability SLAs derived from HostedCluster status conditions.
+
+### Solution
+
+Thanos Ruler evaluates all PrometheusRule CRs on the cluster against Thanos Query (which has both RC and MC metrics) and sends firing alerts to the RC AlertManager. This makes Thanos Ruler the single evaluation point for all rules, eliminating the risk of duplicate evaluation between RC Prometheus and Thanos Ruler.
+
+To avoid duplicates, the kube-prometheus-stack `defaultRules.create` is set to `false` on the RC. The defaults are audited and re-added as explicit PrometheusRule CRs under ROSAENG-1159.
+
+```mermaid
+flowchart LR
+    MC1[MC Prometheus] -->|remote_write| TR[Thanos Receive]
+    MC2[MC Prometheus] -->|remote_write| TR
+    TR --> TQ[Thanos Query]
+    TS[Thanos Store / S3] --> TQ
+    TRuler[Thanos Ruler] -->|queries| TQ
+    TRuler -->|fires alerts| AM[AlertManager]
+    AM -->|severity=critical| PD[PagerDuty]
+    AM -->|continue| B[Webhook Bridge]
+```
+
+### Rule Deployment
+
+Platform alerting rules are deployed as PrometheusRule CRs via the `alerting-rules` Helm chart (`argocd/config/regional-cluster/alerting-rules/`). The thanos-operator's `prometheus-rule` feature gate enables PrometheusRule CR support, but discovery requires specific labels: `app.kubernetes.io/name: alerting-rules` (matched by the ThanosRuler `ruleConfigSelector`) and `operator.thanos.io/prometheus-rule: "true"` (the operator's default label, always merged into the selector). Both must be present on any PrometheusRule CR deployed via the `alerting-rules` chart.
+
+See [Adding Alerting Rules](../adding-alerting-rules.md) for a developer guide on creating new rules.
+
+### Alert Patterns and Current Rules
+
+SLA alerts use multi-window, multi-burn-rate alerting from the [Google SRE Workbook](https://sre.google/workbook/alerting-on-slos/). See `argocd/config/regional-cluster/alerting-rules/templates/` for current alert definitions and [Adding Alerting Rules](../adding-alerting-rules.md) for the developer guide.
+
 ## Open Questions
 
 - [ ] What alert labels should be mapped to SNS message attributes? (SNS supports up to 10 attributes per message.)
