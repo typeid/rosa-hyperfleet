@@ -8,13 +8,13 @@
 #   die                   — Print error and exit
 #   resolve_creds         — Resolve AWS profile to static credentials
 #   ensure_image          — Build CI container image if not present
-#   vault_fetch_accounts  — Vault OIDC login + fetch accounts JSON
+#   load_accounts         — Load account IDs from a JSON file
 #   init_aws_config       — Create temp AWS config dir + EXIT trap
 #   write_container_config — Resolve profiles to static creds for container mount
 #   bastion_run_task      — Core ECS bastion task launch and readiness logic
 
 # Sourcing scripts should set these before sourcing:
-#   CONTAINER_ENGINE, CI_IMAGE, VAULT_ADDR, VAULT_KV_MOUNT
+#   CONTAINER_ENGINE, CI_IMAGE
 
 die() { echo "Error: $*" >&2; exit 1; }
 
@@ -84,61 +84,30 @@ ensure_image() {
     fi
 }
 
-# Fetch accounts JSON and extra fields from Vault via OIDC login.
-# Args: $1 = vault secret path, $2 = accounts field name, $3... = extra field names
-# Sets: _VAULT_TOKEN, _VAULT_ACCOUNTS_JSON
-# Extra fields are exported as uppercase env vars (e.g. "github_token" → GITHUB_TOKEN).
-vault_fetch_accounts() {
-    local secret_path="$1" accounts_field="$2"
-    shift 2
+# Load account IDs from a JSON file.
+# Args: $1 = path to accounts.json, $2... = keys to extract
+# Each key sets an uppercase variable: e.g. "rc" → RC_ACCOUNT
+load_accounts() {
+    local json_file="$1"
+    shift
 
-    echo "Fetching config from Vault (OIDC login)..."
+    [[ -f "$json_file" ]] || die "Account IDs file not found: $json_file"
 
-    _VAULT_TOKEN=$(VAULT_ADDR="$VAULT_ADDR" vault login -method=oidc -token-only 2>/dev/null) \
-        || die "Vault OIDC login failed."
-
-    _VAULT_ACCOUNTS_JSON=$(VAULT_ADDR="$VAULT_ADDR" VAULT_TOKEN="$_VAULT_TOKEN" \
-        vault kv get -mount="$VAULT_KV_MOUNT" -field="$accounts_field" "$secret_path" 2>/dev/null) \
-        || die "Failed to fetch '$accounts_field' from Vault."
-
-    # Fetch any additional fields requested by the caller
-    local field_name upper_name field_val
-    for field_name in "$@"; do
-        upper_name=$(echo "$field_name" | tr 'a-z' 'A-Z')
-        field_val=$(VAULT_ADDR="$VAULT_ADDR" VAULT_TOKEN="$_VAULT_TOKEN" \
-            vault kv get -mount="$VAULT_KV_MOUNT" -field="$field_name" "$secret_path" 2>/dev/null) \
-            || die "Failed to fetch '$field_name' from Vault."
-        export "${upper_name}=${field_val}"
+    local key upper_key val
+    for key in "$@"; do
+        upper_key=$(echo "$key" | tr 'a-z' 'A-Z')
+        val=$(jq -r ".$key" "$json_file") \
+            || die "Failed to parse '$key' from $json_file"
+        [[ "$val" != "null" ]] || die "Missing '$key' in $json_file"
+        printf -v "${upper_key}_ACCOUNT" '%s' "$val"
     done
-
-    echo "Vault config loaded."
-}
-
-# Parse a required account ID from _VAULT_ACCOUNTS_JSON.
-# Usage: parse_account "rc" → sets RC_ACCOUNT
-parse_account() {
-    local key="$1"
-    local upper_key
-    upper_key=$(echo "$key" | tr 'a-z' 'A-Z')
-    local val
-    val=$(echo "$_VAULT_ACCOUNTS_JSON" | jq -r ".$key") \
-        || die "Failed to parse '$key' from account IDs."
-    [[ "$val" != "null" ]] || die "Missing '$key' in account IDs."
-    printf -v "${upper_key}_ACCOUNT" '%s' "$val"
 }
 
 # Create temporary AWS config directory and set up EXIT trap.
-# Validates that rosa-regional-platform-internal is available.
-# Sets: AWS_CONFIG_FILE, AWS_SHARED_CREDENTIALS_FILE, _aws_config_dir, _internal_repo
+# Sets: AWS_CONFIG_FILE, AWS_SHARED_CREDENTIALS_FILE, _aws_config_dir
 # Caller should write profile heredoc to $AWS_CONFIG_FILE after calling this.
 init_aws_config() {
     unset AWS_PROFILE AWS_DEFAULT_PROFILE
-
-    _internal_repo="${INTERNAL_REPO:-$(cd "$REPO_ROOT/../rosa-regional-platform-internal" 2>/dev/null && pwd || true)}"
-    [[ -n "$_internal_repo" ]] \
-        || die "rosa-regional-platform-internal not found at $REPO_ROOT/../rosa-regional-platform-internal. Set INTERNAL_REPO."
-    [[ -d "$_internal_repo/infra/scripts" ]] \
-        || die "Cannot find infra/scripts/ in $_internal_repo"
 
     _aws_config_dir=$(mktemp -d)
     export AWS_CONFIG_FILE="$_aws_config_dir/config"

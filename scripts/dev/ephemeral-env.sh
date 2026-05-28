@@ -21,10 +21,7 @@ CONTAINER_ENGINE="${CONTAINER_ENGINE:-$(command -v podman 2>/dev/null || command
 CI_IMAGE="rosa-regional-ci"
 ENVS_FILE=".ephemeral-envs"
 
-VAULT_ADDR="https://vault.ci.openshift.org"
-VAULT_KV_MOUNT="kv"
-VAULT_SECRET_PATH="selfservice/cluster-secrets-rosa-regional-platform-int/ephemeral-shared-dev-creds"
-VAULT_ACCOUNTS_FIELD="ephemeral_shared_dev_accounts"
+GITHUB_TOKEN_SECRET="/ephemeral-provider/github-token"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/env-common.sh"
@@ -191,33 +188,42 @@ setup_override_mount() {
     fi
 }
 
-# Fetch config from Vault via OIDC login.
-# Sets: ADMIN_ACCOUNT, CENTRAL_ACCOUNT, RC_ACCOUNT, MC_ACCOUNT, GITHUB_TOKEN
-fetch_vault_config() {
-    vault_fetch_accounts "$VAULT_SECRET_PATH" "$VAULT_ACCOUNTS_FIELD" github_token
-    parse_account admin
-    parse_account central
-    parse_account rc
-    parse_account mc
-    parse_account customer
+# Fetch GitHub token from Secrets Manager (unless already set).
+# Requires rrp-ephemeral-central profile to be available.
+fetch_github_token() {
+    if [[ -z "${GITHUB_TOKEN:-}" ]]; then
+        echo "Fetching GitHub token from SSM Parameter Store..."
+        GITHUB_TOKEN=$(aws ssm get-parameter \
+            --name "$GITHUB_TOKEN_SECRET" \
+            --with-decryption \
+            --profile rrp-ephemeral-central \
+            --query Parameter.Value --output text 2>/dev/null) \
+            || die "Failed to fetch GitHub token from SSM."
+    fi
+    export GITHUB_TOKEN
 }
 
 # Create temporary AWS config with ephemeral profiles.
 setup_aws_config() {
-    # If AWS profiles are already configured, skip Vault fetch
+    local accounts_file="${RRP_ACCOUNTS_DEV:-${REPO_ROOT}/../rosa-regional-platform-internal/infra/accounts/dev/accounts.json}"
+    [[ -f "$accounts_file" ]] \
+        || die "Account IDs file not found: $accounts_file
+    Either clone rosa-regional-platform-internal as a sibling directory,
+    or set RRP_ACCOUNTS_DEV to point to your accounts JSON file.
+    See docs/development-environment.md for details."
+    load_accounts "$accounts_file" admin central rc mc customer
+
     if [[ -n "${RRP_AWS_PROFILES_PRESET:-}" ]]; then
         echo "Using pre-existing AWS credentials (RRP_AWS_PROFILES_PRESET)"
         export AWS_CONFIG_FILE=${AWS_CONFIG_FILE:-$HOME/.aws/config}
-        export GITHUB_TOKEN=${GITHUB_TOKEN:-}
         return 0
     fi
 
-    fetch_vault_config
     init_aws_config
 
     cat > "$AWS_CONFIG_FILE" <<AWSCFG
 [profile rrp-ephemeral-admin]
-credential_process = uv run --project ${_internal_repo}/infra/scripts python ${_internal_repo}/infra/scripts/cached_saml_credentials_process.py ${ADMIN_ACCOUNT} ${ADMIN_ACCOUNT}-rrp-admin
+credential_process = uv run ${SCRIPT_DIR}/cached_saml_credentials_process.py ${ADMIN_ACCOUNT} ${ADMIN_ACCOUNT}-rrp-admin
 region = us-east-1
 duration_seconds = 3600
 
@@ -328,7 +334,7 @@ preflight() {
     local missing=""
     local required_tools="jq uv aws git python3"
     if [[ -z "${RRP_AWS_PROFILES_PRESET:-}" ]]; then
-        required_tools="vault fzf $required_tools"
+        required_tools="fzf $required_tools"
     fi
     for tool in $required_tools; do
         command -v "$tool" >/dev/null 2>&1 || missing="$missing $tool"
@@ -365,6 +371,7 @@ cmd_provision() {
 
     # Fetch credentials and write container config
     setup_aws_config
+    fetch_github_token
     write_eph_container_config
 
     # Print summary
@@ -459,6 +466,7 @@ cmd_teardown() {
 
     # Fetch credentials and write container config
     setup_aws_config
+    fetch_github_token
     write_eph_container_config
 
     # Build --eph-branch flag if available (needed after swap-branch)
@@ -518,6 +526,7 @@ cmd_resync() {
 
     # Fetch credentials and write container config
     setup_aws_config
+    fetch_github_token
     write_eph_container_config
 
     # Build --eph-branch flag if available (needed after swap-branch)
@@ -1075,19 +1084,14 @@ case "${1:-help}" in
     list) cmd_list; exit 0 ;;
 esac
 
-# Bastion/collect-logs need vault + aws but not container engine
 case "${1:-help}" in
     bastion|collect-logs)
-        _required="jq uv aws"
-        [[ -n "${RRP_AWS_PROFILES_PRESET:-}" ]] || _required="vault $_required"
-        for tool in $_required; do
+        for tool in jq uv aws; do
             command -v "$tool" >/dev/null 2>&1 || die "Missing required tool: $tool"
         done
         ;;
     port-forward)
-        _required="jq uv aws fzf lsof"
-        [[ -n "${RRP_AWS_PROFILES_PRESET:-}" ]] || _required="vault $_required"
-        for tool in $_required; do
+        for tool in jq uv aws fzf lsof; do
             command -v "$tool" >/dev/null 2>&1 || die "Missing required tool: $tool"
         done
         ;;

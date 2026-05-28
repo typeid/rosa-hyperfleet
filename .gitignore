@@ -30,6 +30,9 @@ node_modules/
 codebuild-logs*
 ephemeral-logs*
 
+# AWS account IDs (sensitive - never commit)
+.accounts-*.json
+
 # Ephemeral environment state
 .ephemeral-envs
 .ephemeral-envs.tmp

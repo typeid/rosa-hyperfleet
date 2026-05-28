@@ -8,15 +8,40 @@ Each environment gets a unique ID that prefixes all provisioned resources, keepi
 
 The following tools must be in `PATH` for all ephemeral environment commands:
 
-| Tool              | Purpose                                                                                     |
-| ----------------- | ------------------------------------------------------------------------------------------- |
-| `vault`           | Fetching AWS credentials (not required if all credential environment variables are pre-set) |
-| `git`             | Repository operations                                                                       |
-| `python3`         | Config rendering                                                                            |
-| `fzf`             | Interactive selection menus                                                                 |
-| `podman`/`docker` | Running the ephemeral environment container                                                 |
+| Tool              | Purpose                                     |
+| ----------------- | ------------------------------------------- |
+| `git`             | Repository operations                       |
+| `python3`         | Config rendering                            |
+| `uv`              | Python script runner (SAML credentials)     |
+| `fzf`             | Interactive selection menus                 |
+| `podman`/`docker` | Running the ephemeral environment container |
 
 Port forwarding additionally requires `aws` and `lsof`.
+
+### AWS Account Setup
+
+By default, scripts look for account ID files in the `rosa-regional-platform-internal` sibling repo:
+
+- **Ephemeral (dev)**: `../rosa-regional-platform-internal/infra/accounts/dev/accounts.json`
+- **Integration**: `../rosa-regional-platform-internal/infra/accounts/int/accounts.json`
+
+If you have the internal repo checked out alongside this one, no extra setup is needed.
+
+To override, set the env vars `RRP_ACCOUNTS_DEV` or `RRP_ACCOUNTS_INT` to point to a different file. The expected format is:
+
+```json
+{
+  "admin": "<admin-account-id>",
+  "central": "<central-account-id>",
+  "rc": "<rc-account-id>",
+  "mc": "<mc-account-id>",
+  "customer": "<customer-account-id>"
+}
+```
+
+(Integration accounts omit `admin`.)
+
+Alternatively, set `RRP_AWS_PROFILES_PRESET=1` to skip the built-in credential setup entirely and manage your own AWS profiles (profiles must be named `rrp-ephemeral-{central,rc,mc,customer}` for ephemeral or `rrp-int-{rc,mc,customer}` for integration).
 
 ## Provision
 
@@ -132,8 +157,8 @@ make ephemeral-shell ID=6bd2d3d7
 Example:
 
 ```
-Fetching credentials from Vault (OIDC login)...
-Credentials loaded (in-memory only).
+Resolving base credentials...
+Fetching GitHub token from Secrets Manager...
 
 ROSA Regional Platform shell
 
@@ -164,7 +189,7 @@ make ephemeral-bastion-mc
 make ephemeral-bastion-rc ID=6bd2d3d7
 ```
 
-This fetches credentials from Vault, starts a bastion ECS task if none is running, waits for the execute command agent, and drops you into an interactive shell on the bastion. From there you can run `kubectl` commands against the cluster:
+This resolves AWS credentials, starts a bastion ECS task if none is running, waits for the execute command agent, and drops you into an interactive shell on the bastion. From there you can run `kubectl` commands against the cluster:
 
 ```
 ==> Bastion task ready
@@ -219,7 +244,7 @@ Available services per cluster type:
 
 The command fetches the ArgoCD admin password automatically and prints it to the terminal. Port forwards remain active until you press `Ctrl+C`.
 
-Prerequisites: `aws`, `fzf`, and `lsof` must be in `PATH`. `vault` is required only when AWS credentials have not been pre-configured (see [Prerequisites](#prerequisites)).
+Prerequisites: `aws`, `fzf`, and `lsof` must be in `PATH`.
 
 ## Run E2E Tests
 

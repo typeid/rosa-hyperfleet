@@ -3,13 +3,12 @@
 # Integration environment CLI for ROSA Regional Platform.
 #
 # Provides interactive access to the standing integration environment.
-# Uses AWS profiles with SAML authentication (via rosa-regional-platform-internal).
+# Uses AWS profiles with SAML authentication.
 #
 # Typically invoked via Makefile targets (make int-shell, etc.)
 #
 # The script constructs a temporary AWS config with the int profiles.
-# It discovers rosa-regional-platform-internal as a sibling directory,
-# or you can set INTERNAL_REPO to override.
+# Account IDs default to rosa-regional-platform-internal; override with RRP_ACCOUNTS_INT.
 
 set -euo pipefail
 
@@ -24,10 +23,7 @@ INT_REGION="us-east-1"
 RC_CLUSTER="regional"
 MC_CLUSTER="mc01"
 
-VAULT_ADDR="https://vault.ci.openshift.org"
-VAULT_KV_MOUNT="kv"
-VAULT_SECRET_PATH="selfservice/cluster-secrets-rosa-regional-platform-int/integration-creds"
-VAULT_ACCOUNTS_FIELD="int_accounts"
+INT_API_URL="https://api.us-east-1.int0.rosa.devshift.net"
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 source "${SCRIPT_DIR}/env-common.sh"
@@ -83,25 +79,20 @@ profile_for() {
     esac
 }
 
-# Fetch config from Vault via OIDC login.
-# Sets: CENTRAL_ACCOUNT, RC_ACCOUNT, MC_ACCOUNT, API_URL (as INT_API_URL)
-fetch_vault_config() {
-    vault_fetch_accounts "$VAULT_SECRET_PATH" "$VAULT_ACCOUNTS_FIELD" api_url
-    parse_account central
-    parse_account rc
-    parse_account mc
-    parse_account customer
-    INT_API_URL="$API_URL"
-}
-
 # Create temporary AWS config with int profiles.
 setup_aws_config() {
-    fetch_vault_config
+    local accounts_file="${RRP_ACCOUNTS_INT:-${REPO_ROOT}/../rosa-regional-platform-internal/infra/accounts/int/accounts.json}"
+    [[ -f "$accounts_file" ]] \
+        || die "Account IDs file not found: $accounts_file
+    Either clone rosa-regional-platform-internal as a sibling directory,
+    or set RRP_ACCOUNTS_INT to point to your accounts JSON file.
+    See docs/development-environment.md for details."
+    load_accounts "$accounts_file" central rc mc customer
     init_aws_config
 
     cat > "$AWS_CONFIG_FILE" <<AWSCFG
 [profile rrp-int-admin]
-credential_process = uv run --project ${_internal_repo}/infra/scripts python ${_internal_repo}/infra/scripts/cached_saml_credentials_process.py ${CENTRAL_ACCOUNT} ${CENTRAL_ACCOUNT}-rrp-int-admin
+credential_process = uv run ${SCRIPT_DIR}/cached_saml_credentials_process.py ${CENTRAL_ACCOUNT} ${CENTRAL_ACCOUNT}-rrp-int-admin
 region = ${INT_REGION}
 duration_seconds = 3600
 
@@ -528,28 +519,22 @@ cmd_collect_logs() {
 
 REPO_ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
-# All commands need vault + jq for account ID fetch
 case "${1:-help}" in
-    bastion)
-        for tool in vault jq uv aws; do
+    bastion|collect-logs)
+        for tool in jq uv aws; do
             command -v "$tool" >/dev/null 2>&1 || die "Missing required tool: $tool"
         done
         ;;
     port-forward)
-        for tool in vault jq uv aws lsof; do
+        for tool in jq uv aws lsof; do
             command -v "$tool" >/dev/null 2>&1 || die "Missing required tool: $tool"
         done
         ;;
     shell|e2e)
-        for tool in vault jq uv aws; do
+        for tool in jq uv aws; do
             command -v "$tool" >/dev/null 2>&1 || die "Missing required tool: $tool"
         done
         ensure_image
-        ;;
-    collect-logs)
-        for tool in vault jq uv aws; do
-            command -v "$tool" >/dev/null 2>&1 || die "Missing required tool: $tool"
-        done
         ;;
 esac
 
