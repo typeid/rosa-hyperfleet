@@ -23,7 +23,7 @@ spec:
           values:
             {{- range .Values.eksNodePool.instanceFamilies }}
             {{- $family := . }}
-            {{- range list "xlarge" "2xlarge" "4xlarge" }}
+            {{- range list "large" "xlarge" "2xlarge" "4xlarge" }}
             - {{ $family }}.{{ . }}
             {{- end }}
             {{- end }}

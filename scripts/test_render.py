@@ -79,11 +79,11 @@ def _create_config_structure(
         },
         "regional_cluster": {
             "enable_bastion": False,
-            "node_instance_families": ["m7i", "m7a"],
+            "node_instance_families": ["m8i", "m7i"],
         },
         "management_cluster_defaults": {
             "enable_bastion": False,
-            "node_instance_families": ["m7i", "m7a"],
+            "node_instance_families": ["m8i", "m7i"],
         },
         "observability": {
             "pagerduty": {
@@ -1824,10 +1824,10 @@ class TestMainIntegration:
             global_defaults={
                 "aws": {"account_id": "111", "management_cluster_account_id": "222"},
                 "regional_cluster": {
-                    "node_instance_families": ["m7i", "m7a"],
+                    "node_instance_families": ["m8i", "m7i"],
                 },
                 "management_cluster_defaults": {
-                    "node_instance_families": ["m7i", "m7a"],
+                    "node_instance_families": ["m8i", "m7i"],
                 },
                 "applications": {
                     "regional-cluster": {
@@ -1877,11 +1877,11 @@ class TestMainIntegration:
         # Check ArgoCD values contain instance families
         rc_values_file = deploy_dir / "test" / "us-east-1" / "argocd-values-regional-cluster.yaml"
         rc_values = yaml.safe_load(rc_values_file.read_text())
-        assert rc_values["eksNodePool"]["instanceFamilies"] == ["m7i", "m7a"]
+        assert rc_values["eksNodePool"]["instanceFamilies"] == ["m8i", "m7i"]
 
         mc_values_file = deploy_dir / "test" / "us-east-1" / "argocd-values-management-cluster.yaml"
         mc_values = yaml.safe_load(mc_values_file.read_text())
-        assert mc_values["eksNodePool"]["instanceFamilies"] == ["m7i", "m7a"]
+        assert mc_values["eksNodePool"]["instanceFamilies"] == ["m8i", "m7i"]
 
     def test_instance_families_environment_override(self, tmp_path):
         """Instance families can be overridden at environment level"""
@@ -1890,10 +1890,10 @@ class TestMainIntegration:
             global_defaults={
                 "aws": {"account_id": "111", "management_cluster_account_id": "222"},
                 "regional_cluster": {
-                    "node_instance_families": ["m7i", "m7a"],
+                    "node_instance_families": ["m8i", "m7i"],
                 },
                 "management_cluster_defaults": {
-                    "node_instance_families": ["m7i", "m7a"],
+                    "node_instance_families": ["m8i", "m7i"],
                 },
                 "applications": {
                     "regional-cluster": {
@@ -1912,10 +1912,10 @@ class TestMainIntegration:
                 "prod": {
                     "defaults": {
                         "regional_cluster": {
-                            "node_instance_families": ["c6i", "c6a"],
+                            "node_instance_families": ["m8i", "m7i"],
                         },
                         "management_cluster_defaults": {
-                            "node_instance_families": ["m6i"],
+                            "node_instance_families": ["m8i-flex", "m7i-flex"],
                         },
                     },
                     "regions": {
@@ -1927,11 +1927,11 @@ class TestMainIntegration:
 
         rc_values_file = deploy_dir / "prod" / "us-east-1" / "argocd-values-regional-cluster.yaml"
         rc_values = yaml.safe_load(rc_values_file.read_text())
-        assert rc_values["eksNodePool"]["instanceFamilies"] == ["c6i", "c6a"]
+        assert rc_values["eksNodePool"]["instanceFamilies"] == ["m8i", "m7i"]
 
         mc_values_file = deploy_dir / "prod" / "us-east-1" / "argocd-values-management-cluster.yaml"
         mc_values = yaml.safe_load(mc_values_file.read_text())
-        assert mc_values["eksNodePool"]["instanceFamilies"] == ["m6i"]
+        assert mc_values["eksNodePool"]["instanceFamilies"] == ["m8i-flex", "m7i-flex"]
 
     def test_instance_families_region_override(self, tmp_path):
         """Instance families can be overridden at region level"""
@@ -1940,10 +1940,10 @@ class TestMainIntegration:
             global_defaults={
                 "aws": {"account_id": "111", "management_cluster_account_id": "222"},
                 "regional_cluster": {
-                    "node_instance_families": ["m7i", "m7a"],
+                    "node_instance_families": ["m8i", "m7i"],
                 },
                 "management_cluster_defaults": {
-                    "node_instance_families": ["m7i", "m7a"],
+                    "node_instance_families": ["m8i", "m7i"],
                 },
                 "applications": {
                     "regional-cluster": {
@@ -1964,7 +1964,7 @@ class TestMainIntegration:
                     "regions": {
                         "us-east-1": {
                             "regional_cluster": {
-                                "node_instance_families": ["c5"],
+                                "node_instance_families": ["c6i"],
                             },
                             "provision_mcs": {"mc01": {}},
                         },
@@ -1975,7 +1975,7 @@ class TestMainIntegration:
 
         rc_values_file = deploy_dir / "test" / "us-east-1" / "argocd-values-regional-cluster.yaml"
         rc_values = yaml.safe_load(rc_values_file.read_text())
-        assert rc_values["eksNodePool"]["instanceFamilies"] == ["c5"]
+        assert rc_values["eksNodePool"]["instanceFamilies"] == ["c6i"]
 
     def test_merged_config_yaml_output(self, tmp_path):
         """Verify _merged_config.yaml is written with merged configuration"""
