@@ -1,0 +1,65 @@
+evaluation_interval: 1m
+
+rule_files:
+  - rules.yaml
+
+tests:
+  # RC alert fires when no metrics are received for 5 minutes
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteDown_RC
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              cluster: test-regional
+              cluster_type: regional
+              job: kubelet
+            exp_annotations:
+              summary: "RC Prometheus has stopped shipping metrics to Thanos"
+              description: "Regional cluster test-regional has not sent metrics for over 5 minutes. Remote-write is cluster-local (Prometheus → Thanos Receive in-cluster)."
+
+  # RC alert does NOT fire when metrics are present
+  - interval: 1m
+    input_series:
+      - series: 'up{job="kubelet", cluster="test-regional"}'
+        values: "1x10"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteDown_RC
+        exp_alerts: []
+
+  # MC alert fires when no metrics are received for 5 minutes
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteDown_MC01
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+              cluster: test-regional-mc01
+              cluster_type: management
+              job: kubelet
+            exp_annotations:
+              summary: "MC01 Prometheus has stopped shipping metrics to Thanos"
+              description: "Management cluster test-regional-mc01 has not sent metrics for over 5 minutes. Remote-write path: Prometheus → sigv4-proxy → RHOBS API Gateway → Thanos Receive on RC."
+
+  # MC alert does NOT fire when metrics are present
+  - interval: 1m
+    input_series:
+      - series: 'up{job="kubelet", cluster="test-regional-mc01"}'
+        values: "1x10"
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: PrometheusRemoteWriteDown_MC01
+        exp_alerts: []
+
+  # RC alert does NOT fire before the 5m threshold
+  - interval: 1m
+    input_series: []
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: PrometheusRemoteWriteDown_RC
+        exp_alerts: []

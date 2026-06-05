@@ -745,14 +745,14 @@ cmd_bastion_port_forward() {
       *) echo "Error: invalid cluster type '$cluster_type'"; echo ""; usage_port_forward; exit 1 ;;
     esac
 
-    local maestro="maestro   - Maestro HTTP + gRPC"
-    local argocd="argocd    - ArgoCD server HTTPS"
-    local prometheus="prometheus  - Prometheus Monitoring Dashboard"
-    local thanos="thanos    - Thanos Query Frontend (aggregated RC+MC metrics)"
-    local loki="loki      - Loki Query Frontend (platform logs)"
-    local alertmanager="alertmanager - AlertManager Web UI"
-    local grafana="grafana   - Grafana Dashboard"
-    local custom="custom    - Custom service / ports"
+    local maestro="maestro       - Maestro HTTP + gRPC"
+    local argocd="argocd        - ArgoCD server HTTPS"
+    local prometheus="prometheus    - Prometheus Monitoring Dashboard"
+    local thanos="thanos        - Thanos Query + Ruler (aggregated RC+MC metrics and alerting)"
+    local loki="loki          - Loki Query Frontend (platform logs)"
+    local alertmanager="alertmanager  - AlertManager Web UI"
+    local grafana="grafana       - Grafana Dashboard"
+    local custom="custom        - Custom service / ports"
 
     # custom services are added only for interactive
     local regional_svc_list=("$maestro" "$argocd" "$prometheus" "$thanos" "$loki" "$alertmanager" "$grafana")
@@ -807,6 +807,7 @@ cmd_bastion_port_forward() {
         thanos)
             forwards+=(
             "Thanos-Query 10902 10902 thanos-query-frontend-thanos-query thanos 9090"
+            "Thanos-Ruler 10903 10903 thanos-ruler-thanos-ruler thanos 9090"
             )
             ;;
         loki)

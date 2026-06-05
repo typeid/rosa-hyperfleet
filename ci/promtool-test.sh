@@ -13,7 +13,10 @@ trap 'rm -rf "${WORK_DIR}"' EXIT
 RULES_FILE="${TEST_DIR}/rules.yaml"
 
 echo "=== Rendering alerting-rules chart ==="
-helm template alerting-rules "${CHART_DIR}" > "${WORK_DIR}/rendered.yaml"
+helm template alerting-rules "${CHART_DIR}" \
+  --set global.cluster_name="test-regional" \
+  --set global.management_clusters="test-regional-mc01:111111111111" \
+  > "${WORK_DIR}/rendered.yaml"
 
 echo "=== Extracting PrometheusRule specs ==="
 yq eval-all '[select(.kind == "PrometheusRule") | .spec.groups[]] | {"groups": .}' "${WORK_DIR}/rendered.yaml" > "${RULES_FILE}"
