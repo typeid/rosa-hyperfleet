@@ -32,31 +32,9 @@ resource "aws_iam_role" "hypershift_operator" {
   )
 }
 
-resource "aws_iam_role_policy" "hypershift_operator_s3" {
-  name = "${var.cluster_id}-hypershift-operator-s3"
-  role = aws_iam_role.hypershift_operator.id
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow"
-      Action = [
-        "s3:PutObject",
-        "s3:GetObject",
-        "s3:DeleteObject",
-        "s3:ListBucket",
-      ]
-      Resource = [
-        var.oidc_bucket_arn,
-        "${var.oidc_bucket_arn}/*",
-      ]
-    }]
-  })
-}
-
-resource "aws_iam_role_policy" "hypershift_operator_kms" {
-  count = var.oidc_kms_key_arn != "" ? 1 : 0
-  name  = "${var.cluster_id}-hypershift-operator-kms"
+resource "aws_iam_role_policy" "hypershift_operator_assume_oidc_writer" {
+  count = var.oidc_writer_role_arn != "" ? 1 : 0
+  name  = "${var.cluster_id}-assume-oidc-writer"
   role  = aws_iam_role.hypershift_operator.id
 
   policy = jsonencode({
@@ -64,12 +42,10 @@ resource "aws_iam_role_policy" "hypershift_operator_kms" {
     Statement = [{
       Effect = "Allow"
       Action = [
-        "kms:Encrypt",
-        "kms:Decrypt",
-        "kms:GenerateDataKey*",
-        "kms:DescribeKey",
+        "sts:AssumeRole",
+        "sts:TagSession"
       ]
-      Resource = var.oidc_kms_key_arn
+      Resource = var.oidc_writer_role_arn
     }]
   })
 }
