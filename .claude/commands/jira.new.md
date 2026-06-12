@@ -18,11 +18,11 @@ Create a new Jira issue in the ROSAENG project with the correct Component pre-fi
 
 Detect the current repository from the working directory or `git remote get-url origin`. Map it to a short label:
 
-| Remote contains            | Repo label                    |
-| -------------------------- | ----------------------------- |
-| `rosa-regional-platform-cli` | `rosa-regional-platform-cli`  |
-| `rosa-regional-platform-api` | `rosa-regional-platform-api`  |
-| `rosa-regional-platform`     | `rosa-regional-platform`      |
+| Remote contains              | Repo label                   |
+| ---------------------------- | ---------------------------- |
+| `rosa-regional-platform-cli` | `rosa-regional-platform-cli` |
+| `rosa-regional-platform-api` | `rosa-regional-platform-api` |
+| `rosa-regional-platform`     | `rosa-regional-platform`     |
 
 Use this label as the default **Repo** field in the description. If detection fails, ask the user.
 
