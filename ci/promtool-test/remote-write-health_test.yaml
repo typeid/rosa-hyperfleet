@@ -12,7 +12,7 @@ tests:
         alertname: PrometheusRemoteWriteDown_RC
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: warning
               cluster: test-regional
               cluster_type: regional
               job: kubelet
@@ -38,7 +38,7 @@ tests:
         alertname: PrometheusRemoteWriteDown_MC01
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: warning
               cluster: test-regional-mc01
               cluster_type: management
               job: kubelet

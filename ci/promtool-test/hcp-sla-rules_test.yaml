@@ -43,7 +43,7 @@ tests:
         alertname: HCPAvailabilityErrorBudgetFastBurn
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: warning
               long_window: 5m
               short_window: 2m
               namespace: clusters-test
@@ -73,7 +73,7 @@ tests:
         alertname: HCPAvailabilityErrorBudgetSlowBurn
         exp_alerts:
           - exp_labels:
-              severity: critical
+              severity: warning
               long_window: 30m
               short_window: 5m
               namespace: clusters-test
