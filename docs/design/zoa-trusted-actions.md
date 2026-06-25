@@ -305,9 +305,9 @@ A custom "swiss knife" image built for ZOA jobs, based on UBI9 for FIPS complian
 | `bash`    | UBI package      | Shell scripting                |
 | `curl`    | UBI package      | HTTP operations                |
 
-**Image source**: `images/zoa-tools/Dockerfile` in this repository.
+**Image source**: [`rosa-hyperfleet-zoa`](https://github.com/openshift-online/rosa-hyperfleet-zoa) repository (`Containerfile`).
 
-**Image location**: `quay.io/slopezz/zoa-tools:latest` (development), future: `quay.io/redhat-rosa/zoa-tools:<version>`
+**Image location**: `quay.io/slopezz/zoa-tools:<pinned-tag>` (development), future: `quay.io/redhat-rosa/zoa-tools:<version>`
 
 **Reference**: The `openshift/managed-scripts` Dockerfile (`quay.io/app-sre/managed-scripts`) uses a similar pattern with UBI8.
 
@@ -877,7 +877,7 @@ Platform API Reconciler (5s loop):                                              
 
 - Adding a new TA: create YAML in `argocd/config/regional-cluster/platform-api/ta-templates/`, push, ArgoCD syncs ConfigMap
 - Updating the image/wrapper: change `zoa-job-config` values, ArgoCD syncs, Platform API hot-reloads
-- **Future**: TAs, the `zoa-tools` container image, and the Go CLI will move to a dedicated repository with independent release cycles
+- The `zoa-tools` container image lives in [`rosa-hyperfleet-zoa`](https://github.com/openshift-online/rosa-hyperfleet-zoa); Go CLI and TA templates will follow
 - Adding a new static SA profile: update `zoa-jobs` chart, Terraform (IAM role + Pod Identity), and Platform API (scope mapping)
 - Debugging: `zoa logs <id>` → full execution log from S3 (available even after Job/Pod GC, including when the runner Job failed)
 

@@ -335,7 +335,7 @@ Kubernetes Job Controller (on target cluster) — starts BOTH Jobs in parallel:
 
 Runner Job (zoa-<exec-id>):
   - SA: zoa-runner-<exec-id> (per-execution, Kubernetes-only permissions)
-  - Image: quay.io/slopezz/zoa-tools:latest
+  - Image: quay.io/slopezz/zoa-tools:<pinned-tag>
   /zoa/entrypoint.sh
     │
     ├── Logs metadata: [zoa] execution_id=... action=... target=...
@@ -350,7 +350,7 @@ Runner Job (zoa-<exec-id>):
 
 Uploader Job (zoa-<exec-id>-upload):
   - SA: zoa-uploader (static, S3 PutObject + KMS Encrypt only)
-  - Image: quay.io/slopezz/zoa-tools:latest
+  - Image: quay.io/slopezz/zoa-tools:<pinned-tag>
   /zoa/upload_entrypoint.sh
     │
     ├── Poll runner Job every 1s for Complete or Failed condition
@@ -562,21 +562,21 @@ What Platform API generates (full ManifestWork with ~200 lines of K8s manifests)
 
 The Job "frame" is NOT defined by TA authors. It comes from `zoa-job-config` ConfigMap:
 
-| Config                      | Default                            | Purpose                                                            |
-| --------------------------- | ---------------------------------- | ------------------------------------------------------------------ |
-| `image`                     | `quay.io/slopezz/zoa-tools:latest` | Container image for both runner and uploader Jobs                  |
-| `cpu_request`               | `25m`                              | Pod CPU request                                                    |
-| `memory_request`            | `64Mi`                             | Pod memory request                                                 |
-| `cpu_limit`                 | `250m`                             | Pod CPU limit                                                      |
-| `memory_limit`              | `256Mi`                            | Pod memory limit                                                   |
-| `execution_timeout_seconds` | `1800`                             | Global timeout for reconciler (per-TA `timeout_seconds` overrides) |
-| `upload_timeout_seconds`    | `120`                              | Reserved time budget for S3 upload after runner finishes           |
-| `write_cooldown_seconds`    | `300`                              | Global write cooldown (seconds) between same action on same target |
-| `ttl_seconds`               | `3600`                             | K8s TTL after Job completion (safety GC via Job controller)        |
-| `dynamodb_ttl_days`         | `365`                              | DynamoDB record auto-expiry (execution + audit entries)            |
-| `max_concurrent_per_target` | `10`                               | Max running + pending executions per target cluster                |
-| `entrypoint.sh`             | (wrapper script)                   | Runner wrapper: logging, ConfigMap output patch, exit handling     |
-| `upload_entrypoint.sh`      | (wrapper script)                   | Uploader wrapper: waits for runner, reads ConfigMap, uploads to S3 |
+| Config                      | Default                           | Purpose                                                            |
+| --------------------------- | --------------------------------- | ------------------------------------------------------------------ |
+| `image`                     | `quay.io/slopezz/zoa-tools:<tag>` | Container image for runner and uploader Jobs                       |
+| `cpu_request`               | `25m`                             | Pod CPU request                                                    |
+| `memory_request`            | `64Mi`                            | Pod memory request                                                 |
+| `cpu_limit`                 | `250m`                            | Pod CPU limit                                                      |
+| `memory_limit`              | `256Mi`                           | Pod memory limit                                                   |
+| `execution_timeout_seconds` | `1800`                            | Global timeout for reconciler (per-TA `timeout_seconds` overrides) |
+| `upload_timeout_seconds`    | `120`                             | Reserved time budget for S3 upload after runner finishes           |
+| `write_cooldown_seconds`    | `300`                             | Global write cooldown (seconds) between same action on same target |
+| `ttl_seconds`               | `3600`                            | K8s TTL after Job completion (safety GC via Job controller)        |
+| `dynamodb_ttl_days`         | `365`                             | DynamoDB record auto-expiry (execution + audit entries)            |
+| `max_concurrent_per_target` | `10`                              | Max running + pending executions per target cluster                |
+| `entrypoint.sh`             | (wrapper script)                  | Runner wrapper: logging, ConfigMap output patch, exit handling     |
+| `upload_entrypoint.sh`      | (wrapper script)                  | Uploader wrapper: waits for runner, reads ConfigMap, uploads to S3 |
 
 Changing any of these updates ALL future TA executions — no per-TA changes needed.
 
