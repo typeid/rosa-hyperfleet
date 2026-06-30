@@ -98,9 +98,10 @@ argocd/
 │   └── shared/              # Shared configurations
 └── README.md
 
-.ambient/
-├── ci-analyser-agent/        # Nightly CI failure diagnosis & fix PRs (rrp-bot)
-└── documentation-update-agent/ # Daily doc staleness detection & update PRs (rrp-bot)
+.chai-bot/                    # Chai Bot scheduled tasks
+├── rosa_hyperfleet_ci_daily_health_report.md   # Daily CI health report
+├── rosa_hyperfleet_ci_weekly_status.md          # Weekly Jira epic progress + PR stats
+└── rosa_hyperfleet_docs_update.md               # Weekly doc staleness detection & update PRs
 
 docs/
 ├── README.md                 # Architecture overview
@@ -174,6 +175,21 @@ See [`docs/development-environment.md`](docs/development-environment.md) for ful
 ### Alerting Rules
 
 Platform alerting and recording rules are defined as PrometheusRule CRs in the `alerting-rules` chart (`argocd/config/regional-cluster/alerting-rules/templates/`). Rules are evaluated by Thanos Ruler against Thanos Query. See [docs/adding-alerting-rules.md](docs/adding-alerting-rules.md) for a developer guide on adding new rules, including the error budget burn rate pattern used for SLA alerts.
+
+### Chai Bot Scheduled Tasks
+
+Scheduled CI/documentation tasks run via Chai Bot. Schedules are defined in `.chai-bot/`.
+
+**Slack threading convention:** Chai Bot uses delimiters to split output into a top-level channel message and threaded replies:
+
+- `---THREAD_DETAILS---` — everything after this line becomes threaded replies (not posted to the channel)
+- `---THREAD_BREAK---` — separates individual threaded replies
+
+**Daily CI report** tracks `nightly-ephemeral` and `nightly-integration` jobs. Top-level message shows today's status + 10-day trend table. Threaded replies are created only when jobs are failing, using the `ci-troubleshooter` agent for root cause analysis.
+
+**Weekly status** groups epics by status (In Progress with completion %, To Do, Done) and summarizes PR activity across `rosa-hyperfleet`, `rosa-hyperfleet-api`, and `rosa-hyperfleet-cli`.
+
+**Docs update** detects stale documentation across the three repos and creates PRs to fix it, using the `documentation-updater` agent for validation.
 
 ### Important Files and Patterns
 

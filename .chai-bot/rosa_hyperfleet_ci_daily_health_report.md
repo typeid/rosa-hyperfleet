@@ -6,11 +6,9 @@ You are running a **cron** scheduled task that produces a daily CI health report
 
 Check the pass/fail history (last 10 completed builds per job) for ROSA HyperFleet CI periodic jobs. Report overall CI health and individual job status.
 
-**Overall CI Status** is based on the **latest completed run** for each job:
-
-- Always post a report to the channel (never call `no_action_required()`)
-- If all jobs are passing (latest run passed for both): post a concise health summary with trend table
-- If any jobs are failing (latest run failed): post the full report and investigate failures in threaded replies
+- Always post the top-level status to the channel (never call `no_action_required()`)
+- If all jobs are passing: post the status summary only — no threaded replies
+- If any job is failing: post the status summary, then create a threaded reply per failing job with investigation
 
 ## Procedure
 
@@ -100,78 +98,33 @@ integration:   ✅    ✅    ❌    ✅    ✅    ✅    ✅    ✅    ❌    �
 
 ### 4. Channel response (top-level summary)
 
-Post a concise summary as your channel response. This is the top-level message that everyone sees. The report tells the team how each job ran in the **last 1 day** (latest run) and shows the 10-run trend for context.
+Post a concise summary as your channel response. Use concise job names: "ephemeral" and "integration".
 
-**Job name formatting:** Use concise names:
-
-- "ephemeral" (not "nightly-ephemeral")
-- "integration" (not "nightly-integration")
-
-**Always use this format** (regardless of whether jobs are passing or failing):
+**Emoji key:** :large_green_circle: passing, :red_circle: failing, :large_yellow_circle: mixed, :hourglass_flowing_sand: running/scheduled, :white_circle: no run today.
 
 ```text
-%OVERALL_EMOJI% *ROSA HyperFleet CI Daily Health -- %DATE%*
+%OVERALL_EMOJI% *CI Daily — %DATE%*
+%JOB_EMOJI% ephemeral: %STATUS% (<%URL%|run>)  |  %JOB_EMOJI% integration: %STATUS% (<%URL%|run>)
 
-*Latest Run Status:*
-%JOB_EMOJI% ephemeral: %STATUS% (<%JOB_RUN_URL%|latest run>)
-%JOB_EMOJI% integration: %STATUS% (<%JOB_RUN_URL%|latest run>)
-
-*Summary:* %PASSING_COUNT%/2 jobs passing
-
-*10-Run Trend:*
               Jun10 Jun11 Jun12 Jun13 Jun14 Jun15 Jun16 Jun17 Jun18 Jun19
 ephemeral:     ✅    ✅    ✅    ✅    ✅    ✅    ✅    ✅    ✅    ✅   10/10 (100%)
 integration:   ✅    ✅    ❌    ✅    ✅    ✅    ✅    ✅    ❌    ❌    7/10 (70%)
-
-_<https://prow.ci.openshift.org|Prow Dashboard>_
 ```
 
-**Field values:**
+Use monospace/code block formatting for the trend table. Align columns for readability.
 
-- `%OVERALL_EMOJI%`: :large_green_circle: if 2/2 passing, :large_yellow_circle: if mixed, :red_circle: if 0/2 passing, :hourglass_flowing_sand: if pending after retries, :white_circle: if no runs today
-- `%JOB_EMOJI%`: :large_green_circle: if today's run passed, :red_circle: if failed, :hourglass_flowing_sand: if running/scheduled, :white_circle: if no run today
-- `%STATUS%`: "passing", "failing", "running", "scheduled", or "no run today" based on **today's run** status
-- `%JOB_RUN_URL%`: Link to today's Prow job run (or latest run link if no run today)
+### 5. Failure analysis (threaded replies — only when jobs are failing)
 
-**Format instructions:**
+**Skip this step entirely if both jobs are passing.** Only create threaded replies when a job has failed.
 
-- Use monospace/code block formatting (triple backticks) for the trend table
-- Align columns with spaces for readability
-- Date header: 5 characters wide per column (e.g., "Jun10")
-- Job name: left-aligned, followed by colon
-- Status emojis: centered under each date
-- Pass count and percentage: right-aligned at the end of each row
+After your top-level summary (Step 4), emit `---THREAD_DETAILS---` on its own line. Everything after that delimiter becomes threaded replies (not part of the channel summary). Separate each threaded reply with `---THREAD_BREAK---` on its own line.
 
-**Trend interpretation examples:**
-
-- All ✅ in a row → Perfect health (100%)
-- Recent ❌ (rightmost columns) → Recent degradation (e.g., last 2 runs failed)
-- Old ❌ (leftmost columns), then all ✅ → Recovered (old issue, now healthy)
-- Scattered ❌ throughout → Flaky/intermittent failures
-
-### 5. Failure analysis (threaded replies)
-
-For each job whose **latest run failed** (status "failing" in Step 4), post a **separate threaded reply** to the top-level message with investigation.
-
-For each failing job:
-
-1. Fetch the build log from the most recent failure using Prow CI tools or `fetch_web_content` on the artifacts URL
-2. Identify the specific failure: key error messages, failing test names, failing step
-3. Perform root cause analysis using Sippy, Prow CI tools, or other available tools
-4. Classify the failure based on what you find in the logs
-5. **Note the failure pattern from the trend table:**
-   - Is this a recent issue (❌ in last 1-3 columns)?
-   - Is this an old issue (❌ in first few columns but recovered)?
-   - Is this flaky (scattered ❌ throughout)?
-   - Is this persistent (mostly ❌)?
-6. Link to the failing Prow job run(s)
+For each job whose **latest run failed**, produce a **separate threaded reply** with investigation. Follow the investigation procedure in `.claude/agents/ci-troubleshooter.md` to diagnose the failure. The source is `main` — read files directly with the Read tool.
 
 Format each threaded reply like:
 
 ```text
 %EMOJI% *%JOB_NAME% -- %PASS%/10 (%RATE%%)*
-
-Pattern: %PATTERN_DESCRIPTION%
 
 %SHORT_SUMMARY%
 %ROOT_CAUSE_ANALYSIS%
@@ -179,26 +132,27 @@ Pattern: %PATTERN_DESCRIPTION%
 Most recent failure: <%JOB_RUN_URL%|Build #%NUMBER%> (%DATE%)
 ```
 
-**Use concise job names:** "ephemeral" or "integration" (not "nightly-ephemeral" or "nightly-integration")
+Use concise job names: "ephemeral" or "integration".
 
-**Pattern descriptions to use:**
+**Example output with threads:**
 
-- "Recent degradation" - ❌ only in rightmost columns (e.g., "last 2 runs failed after 8 consecutive passes")
-- "Persistent failure" - mostly ❌ across the table (e.g., "7 of 10 runs failed")
-- "Intermittent/flaky" - scattered ❌ throughout (e.g., "5 failures scattered across 10 runs, no clear pattern")
-- "Recovered" - ❌ only in leftmost columns (e.g., "failed first 2 runs, then 8 consecutive passes")
-- "New issue" - first ❌ appeared recently (e.g., "first failure after 7 consecutive passes")
+```text
+:large_yellow_circle: *CI Daily — Jun 30*
+:large_green_circle: ephemeral: passing (<url|run>)  |  :red_circle: integration: failing (<url|run>)
 
-### Reference: common failure patterns
+              Jun21 Jun22 Jun23 Jun24 Jun25 Jun26 Jun27 Jun28 Jun29 Jun30
+ephemeral:     ✅    ✅    ✅    ✅    ✅    ✅    ✅    ✅    ✅    ✅   10/10 (100%)
+integration:   ✅    ✅    ❌    ✅    ✅    ✅    ✅    ✅    ❌    ❌    7/10 (70%)
 
-These are patterns that come up often. Use them as hints, not a rigid checklist. Classify failures however makes sense based on what you find in the logs.
+---THREAD_DETAILS---
 
-- Ephemeral provider setup: issues provisioning ephemeral infrastructure
-- Integration environment connectivity: problems reaching integration endpoints
-- API platform test failures: rosa-hyperfleet-api test issues
-- Image push failures: problems pushing to registry
-- Terraform/infrastructure provisioning: resource creation errors
-- Cleanup/teardown issues: resources not fully cleaned up
+:red_circle: *integration -- 7/10 (70%)*
+
+E2E test `TestClusterCreation` timed out waiting for hosted cluster to become ready.
+Root cause: MC maestro-agent pod in CrashLoopBackOff due to MQTT connection failure.
+
+Most recent failure: <url|Build #1234> (Jun 30)
+```
 
 ## Constraints
 

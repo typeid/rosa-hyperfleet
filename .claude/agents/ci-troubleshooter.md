@@ -212,16 +212,31 @@ Use `git show <commit>:<path>` (or Read for nightly/main) to understand the fail
 
 ## Step 7: Provide Diagnosis
 
+Before presenting findings, gather these additional data points:
+
+1. **Phase timing** — Note which phase failed (`provision-ephemeral`, `e2e-tests`, `teardown-ephemeral`) and how long each phase took. Extract durations from build log timestamps to identify slow or hung phases.
+2. **RC vs MC scope** — Determine whether the failure is specific to the Regional Cluster, a Management Cluster, or the interaction between them. Check log namespaces, error context, and which account/cluster the failing step was operating on.
+3. **Recent changes** — Check `git log --oneline -20 main` for recent commits that could be related to the failure. For PR jobs, check the PR diff. Correlate the failure with any recent changes to the failing component.
+4. **Failure trend** — Use the job history page to check if this same failure (or similar error signature) has appeared in previous runs. Note whether it's a new issue, recurring, or intermittent.
+
 Present findings in this format:
 
 ### Diagnosis
 
 **Job:** `<job name and URL>`
 **Type:** `<job type>`
-**Failed Step:** `<step name>`
+**Failed Phase:** `<phase name>` (failed after `<duration>`)
+**Phase Durations:** `provision-ephemeral: <time>` | `e2e-tests: <time>` | `teardown-ephemeral: <time>`
+**Scope:** `<RC / MC / RC↔MC interaction>`
 
 **Root Cause:**
 <Clear explanation with relevant log excerpts>
+
+**Related Changes:**
+<Recent commits or PRs that may be related, or "No recent changes to affected components">
+
+**Failure Trend:**
+<New issue / Recurring (seen in N of last 10 runs) / First occurrence>
 
 **Files Involved:**
 

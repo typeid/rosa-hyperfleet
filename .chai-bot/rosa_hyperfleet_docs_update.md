@@ -70,120 +70,21 @@ When updating docs in response to recent PRs, keep it **concise and high-level**
 
 ### Phase 4: Overall Documentation Health Validation
 
-**This is critical** - Even if no PRs were merged in the last 7 days, validate the overall documentation health across all three repositories.
+**This is critical** — Even if no PRs were merged in the last 7 days, validate the overall documentation health across all three repositories.
 
-For each repository, perform a comprehensive audit:
-
-#### 4.1: Clone and Review Repository
+For each repository, clone it and follow the full review procedure in `.claude/agents/documentation-updater.md` (inventory, accuracy, CLAUDE.md validation, completeness, consistency, freshness, conciseness, CI docs, and security scan).
 
 ```bash
 git clone https://github.com/openshift-online/<repo>
 cd <repo>
 ```
 
-#### 4.2: Inventory All Documentation
+**Additional checks beyond the agent's scope:**
 
-Scan each repository for all files that may contain documentation or descriptive text:
-
-**Documentation files:**
-
-- All `*.md` markdown files across the repository (use `find . -name '*.md'`)
-- `.claude/agents/` — agent prompt definitions
-
-**Other repo files with text content:**
-
-- YAML files (`*.yaml`, `*.yml`) — comments, descriptions, annotations
-- Terraform files (`*.tf`) — comments, descriptions
-- Shell scripts (`*.sh`) — comments, usage text
-- CI configuration (`.github/workflows/`, `.tekton/`) — comments, step descriptions
-
-**Ignore:**
-
-- `docs/presentations/` — historical, no longer maintained
-
-#### 4.3: CLAUDE.md and Top-Level Documentation Validation
-
-Read the `CLAUDE.md` file and validate:
-
-- **Accuracy**: Does it reflect current repository structure?
-- **Completeness**: Are key directories/files documented?
-- **Project standards**: Are coding conventions up-to-date?
-- **Architecture decisions**: Do ADRs in the file match actual implementation?
-- **Development workflow**: Are instructions (make targets, pre-push, etc.) accurate?
-- **File paths**: Are referenced paths, module names, and commands still valid?
-- **Links**: Are internal and external links still reachable?
-
-**Check against:**
-
-- Current `Makefile` targets
-- Actual directory structure (compare with `tree -d -L 2`)
-- Recent significant changes (not just last 7 days)
-
-#### 4.4: Documentation Directory Validation
-
-Review the `docs/` directory (if it exists):
-
-**Check for:**
-
-- **Accuracy**: Do described behaviors, workflows, and architectures match what the code actually does?
-- **Staleness**: Check if design docs match current architecture
-  - Are there references to deprecated tools, removed files, or old procedures?
-  - Do "current" or "planned" statements still hold true?
-- **Completeness**: Are all major features documented? (of existing docs only - don't create new docs)
-  - Do existing docs fully cover the topics they describe?
-  - Have sections become incomplete due to code changes?
-- **Consistency**: Do different docs agree with each other?
-  - Architecture overview vs. design decisions alignment
-  - Naming conventions consistent across docs
-  - Do cross-references work? Are diagrams current?
-- **Conciseness**: Are docs overly verbose with too many examples?
-- **Security**: Check for exposed sensitive information (IPs, account numbers, credentials)
+- **Cross-repo consistency**: Ensure API/CLI docs align with platform docs
 - **Formatting**: Run `npx prettier --check '**/*.md'` to find formatting issues
-- **Mermaid diagrams**: Ensure all diagrams use Mermaid, not ASCII art
 
-**Focus areas:**
-
-- `docs/README.md` - Entry point accuracy
-- `docs/design/` - Architecture decision records
-- `docs/FAQ.md` - Common questions still relevant?
-- Cross-repo references (e.g., API docs referencing platform docs)
-
-**Conciseness validation:**
-Look for and fix documentation that is:
-
-- ❌ **Too verbose** - Multiple paragraphs explaining a simple concept
-- ❌ **Too many examples** - 5+ examples when 1-2 would suffice
-- ❌ **Step-by-step tutorials** - Unless explicitly a tutorial doc, keep it high-level
-- ❌ **Redundant** - Repeating information already in other docs
-- ✅ **High-level and focused** - Key concepts, decisions, and essential information
-- ✅ **One good example** - If needed to clarify a complex point
-- ✅ **Links for details** - Point to code, API docs, or external resources for depth
-
-#### 4.5: CI Directory Validation
-
-Review CI-related documentation:
-
-- **CI configuration files**: `.github/workflows/`, `ci/`, `.tekton/`
-- **CI documentation**: Are CI processes documented?
-- **Prow job configs**: If present, are they documented?
-- **Pre-commit hooks**: Are they documented in CLAUDE.md?
-
-**Validation:**
-
-- Do documented CI steps match actual workflow files?
-- Are new CI jobs documented?
-- Is the CI troubleshooting guide up-to-date?
-
-#### 4.6: Synthesize Findings
-
-After reviewing CLAUDE.md, docs/, and ci/ in all three repos:
-
-1. **Combine findings** from Phase 3 (recent PRs) and Phase 4 (overall validation)
-2. **Prioritize updates**:
-   - Critical: Inaccurate CLAUDE.md, broken cross-references
-   - High: Stale architecture docs, missing major features
-   - Medium: Formatting issues, minor inconsistencies
-3. **Group by repository** - which repos need documentation updates?
+**Synthesize findings** from Phase 3 (recent PRs) and Phase 4 (overall validation). Prioritize: critical (inaccurate CLAUDE.md, broken cross-references) > high (stale architecture docs) > medium (formatting, minor inconsistencies). Group by repository.
 
 **Exit condition:** If both Phase 3 found no stale docs from recent PRs AND Phase 4 found no documentation issues, call `no_action_required()` and exit.
 
@@ -358,20 +259,6 @@ EOF
 )"
 ```
 
-### Phase 6: Channel Notification
-
-After completing all documentation updates, handle Slack notification:
-
-**If NO documentation updates were needed** (both Phase 3 and Phase 4 found nothing to update):
-
-- Post to channel: `:white_check_mark: ROSA HyperFleet documentation is up-to-date. No updates required this week.`
-
-**If PRs were created** (documentation updates were needed):
-
-- Call `no_action_required()` to suppress automatic channel notification
-- PRs are created silently (no channel notification)
-- The weekly status report (separate task) will include the summary of doc PRs
-
 ## Important Guidelines
 
 ### Reactive Updates (Phase 3)
@@ -413,7 +300,7 @@ After completing all documentation updates, handle Slack notification:
   - Design-first approach (architecture over implementation)
   - Run `make pre-push` before creating PRs
 - **Handle errors per-repo**: If one repo fails, log the error and continue with the remaining repos
-- **Exit cleanly**: If no updates needed (both reactive and proactive), call `no_action_required()`
+- **Exit cleanly**: If no updates needed (both reactive and proactive), exit without creating PRs
 
 ## Authentication
 
