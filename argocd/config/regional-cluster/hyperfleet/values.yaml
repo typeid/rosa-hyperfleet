@@ -9,7 +9,7 @@ hyperfleet:
 
   source:
     repoURL: https://github.com/typeid/hyperfleet-operator.git
-    targetRevision: add_compactor
+    targetRevision: main
     path: charts/hyperfleet-operator
 
   syncPolicy:
