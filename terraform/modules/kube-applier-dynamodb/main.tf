@@ -1,14 +1,14 @@
 # =============================================================================
 # kube-applier-dynamodb Module
 #
-# Creates the six DynamoDB tables used by kube-applier-aws for one Management
+# Creates the four DynamoDB tables used by kube-applier-aws for one Management
 # Cluster. These tables live in the Regional Cluster (RC) account and are
 # provisioned inline from regional-cluster/main.tf.
 #
 # Table naming follows the kube-applier-aws convention:
 #   Prefix (--specs-table):  mc-{mc}-specs
 #   Prefix (--status-table): mc-{mc}-status
-#   Suffixes appended by the client: -applydesires, -deletedesires, -readdesires
+#   Suffixes appended by the client: -applydesires, -readdesires
 #
 # Specs tables have DynamoDB Streams enabled — the controller uses them to
 # drive its SharedIndexInformer (TRIM_HORIZON shard polling).
@@ -24,16 +24,14 @@ locals {
     }
   )
 
-  # The six table names for this MC
+  # The four table names for this MC
   specs_tables = toset([
     "${var.mc_name}-specs-applydesires",
-    "${var.mc_name}-specs-deletedesires",
     "${var.mc_name}-specs-readdesires",
   ])
 
   status_tables = toset([
     "${var.mc_name}-status-applydesires",
-    "${var.mc_name}-status-deletedesires",
     "${var.mc_name}-status-readdesires",
   ])
 
