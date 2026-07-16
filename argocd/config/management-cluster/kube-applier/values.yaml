@@ -7,7 +7,7 @@ kubeApplier:
   image:
     registry: "quay.io"
     repository: "psav/kube-applier-aws"
-    tag: "v8"
+    tag: "remove-delete-desire-18d87ca"
     pullPolicy: IfNotPresent
 
   # Deployment configuration
@@ -30,7 +30,7 @@ kubeApplier:
     metricsListenAddress: ":8081"
     healthzListenAddress: ":8083"
     leaderElectionId: "kube-applier"
-    logVerbosity: 2
+    logVerbosity: 4
     exitOnPanic: true
 
   serviceAccount:
