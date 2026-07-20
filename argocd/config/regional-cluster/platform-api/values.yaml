@@ -44,7 +44,6 @@ platformApi:
 
   # HyperfleetDB connection (pgruntime-backed Postgres)
   hyperfleetdb:
-    bucketCount: 32
     secretName: hyperfleet-db-dsn
     secretKey: dsn
 

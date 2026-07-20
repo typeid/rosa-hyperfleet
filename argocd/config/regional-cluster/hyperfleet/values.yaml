@@ -25,9 +25,6 @@ hyperfleet:
 
     replicaCount: 2
 
-    hyperfleetdb:
-      bucketCount: 32
-
     serviceAccount:
       create: true
       name: hyperfleet-operator
