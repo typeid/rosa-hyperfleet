@@ -1,9 +1,9 @@
 # =============================================================================
 # HyperFleet DB Module
 #
-# Provisions an RDS PostgreSQL instance for the HyperFleet CR store, replacing
-# the fleet-db workerless EKS cluster. Multi-AZ with synchronous replication,
-# gp3 storage, KMS encryption at rest, and automated backups with PITR.
+# Provisions an Aurora PostgreSQL cluster with I/O Optimized storage for the
+# HyperFleet CR store. Aurora provides automatic storage scaling (up to 128 TB),
+# 6-way replication across 3 AZs, and I/O Optimized eliminates per-IOPS billing.
 # =============================================================================
 
 data "aws_caller_identity" "current" {}
@@ -14,7 +14,7 @@ data "aws_caller_identity" "current" {}
 
 resource "aws_db_subnet_group" "hyperfleet_db" {
   name        = "${var.cluster_id}-hyperfleet-db"
-  description = "HyperFleet DB RDS subnet group"
+  description = "HyperFleet DB Aurora subnet group"
   subnet_ids  = var.private_subnet_ids
 
   tags = {
@@ -24,7 +24,7 @@ resource "aws_db_subnet_group" "hyperfleet_db" {
 
 resource "aws_security_group" "hyperfleet_db" {
   name        = "${var.cluster_id}-hyperfleet-db"
-  description = "Allow PostgreSQL access from VPC to HyperFleet DB RDS"
+  description = "Allow PostgreSQL access from VPC to HyperFleet DB Aurora"
   vpc_id      = var.vpc_id
 
   tags = {
@@ -42,11 +42,11 @@ resource "aws_vpc_security_group_ingress_rule" "hyperfleet_db_postgres" {
 }
 
 # =============================================================================
-# KMS Key for RDS Encryption at Rest
+# KMS Key for Aurora Encryption at Rest
 # =============================================================================
 
 resource "aws_kms_key" "hyperfleet_db" {
-  description             = "KMS key for HyperFleet DB RDS encryption at rest"
+  description             = "KMS key for HyperFleet DB Aurora encryption at rest"
   deletion_window_in_days = 7
   enable_key_rotation     = true
 
@@ -100,22 +100,21 @@ resource "aws_kms_alias" "hyperfleet_db" {
 data "aws_region" "current" {}
 
 # =============================================================================
-# RDS Parameter Group
+# Aurora Parameter Groups
+#
+# Aurora requires separate cluster-level and instance-level parameter groups.
+# Cluster parameters control engine-wide settings (SSL, extensions);
+# instance parameters control per-instance behavior (logging).
 # =============================================================================
 
-resource "aws_db_parameter_group" "hyperfleet_db" {
-  name        = "${var.cluster_id}-hyperfleet-db-pg16"
-  family      = "postgres16"
-  description = "HyperFleet DB PostgreSQL 16 parameters"
+resource "aws_rds_cluster_parameter_group" "hyperfleet_db" {
+  name        = "${var.cluster_id}-hyperfleet-db-aurora-pg16-cluster"
+  family      = "aurora-postgresql16"
+  description = "HyperFleet DB Aurora PostgreSQL 16 cluster parameters"
 
   parameter {
     name  = "rds.force_ssl"
     value = "1"
-  }
-
-  parameter {
-    name  = "log_min_duration_statement"
-    value = "1000"
   }
 
   parameter {
@@ -125,7 +124,22 @@ resource "aws_db_parameter_group" "hyperfleet_db" {
   }
 
   tags = {
-    Name = "${var.cluster_id}-hyperfleet-db-pg16"
+    Name = "${var.cluster_id}-hyperfleet-db-aurora-pg16-cluster"
+  }
+}
+
+resource "aws_db_parameter_group" "hyperfleet_db" {
+  name        = "${var.cluster_id}-hyperfleet-db-aurora-pg16"
+  family      = "aurora-postgresql16"
+  description = "HyperFleet DB Aurora PostgreSQL 16 instance parameters"
+
+  parameter {
+    name  = "log_min_duration_statement"
+    value = "1000"
+  }
+
+  tags = {
+    Name = "${var.cluster_id}-hyperfleet-db-aurora-pg16"
   }
 }
 
@@ -167,7 +181,7 @@ resource "aws_iam_role_policy_attachment" "rds_monitoring" {
 
 resource "aws_secretsmanager_secret" "master" {
   name                    = "${var.cluster_id}-hyperfleet-db-master-password"
-  description             = "HyperFleet DB RDS master password"
+  description             = "HyperFleet DB Aurora master password"
   kms_key_id              = aws_kms_key.hyperfleet_db.arn
   recovery_window_in_days = 7
 
@@ -187,41 +201,59 @@ resource "aws_secretsmanager_secret_version" "master" {
 }
 
 # =============================================================================
-# RDS Instance
+# Aurora PostgreSQL Cluster
 # =============================================================================
 
-resource "aws_db_instance" "hyperfleet_db" {
-  identifier = "${var.cluster_id}-hyperfleet-db"
+resource "aws_rds_cluster" "hyperfleet_db" {
+  cluster_identifier = "${var.cluster_id}-hyperfleet-db"
 
-  engine         = "postgres"
+  engine         = "aurora-postgresql"
   engine_version = var.engine_version
-  instance_class = var.instance_class
 
-  db_name  = var.database_name
-  username = "hyperfleet"
-  password = random_password.master.result
+  storage_type      = "aurora-iopt1"
+  storage_encrypted = true
+  kms_key_id        = aws_kms_key.hyperfleet_db.arn
 
-  allocated_storage     = var.allocated_storage
-  max_allocated_storage = var.max_allocated_storage
-  storage_type          = "gp3"
-  storage_encrypted     = true
-  kms_key_id            = aws_kms_key.hyperfleet_db.arn
+  database_name   = var.database_name
+  master_username = "hyperfleet"
+  master_password = random_password.master.result
 
-  multi_az               = true
-  db_subnet_group_name   = aws_db_subnet_group.hyperfleet_db.name
-  vpc_security_group_ids = [aws_security_group.hyperfleet_db.id]
-  publicly_accessible    = false
+  db_subnet_group_name            = aws_db_subnet_group.hyperfleet_db.name
+  vpc_security_group_ids          = [aws_security_group.hyperfleet_db.id]
+  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.hyperfleet_db.name
 
-  parameter_group_name = aws_db_parameter_group.hyperfleet_db.name
-
-  backup_retention_period = var.backup_retention_period
-  backup_window           = "03:00-04:00"
-  maintenance_window      = "sun:05:00-sun:06:00"
-  copy_tags_to_snapshot   = true
+  backup_retention_period      = var.backup_retention_period
+  preferred_backup_window      = "03:00-04:00"
+  preferred_maintenance_window = "sun:05:00-sun:06:00"
+  copy_tags_to_snapshot        = true
 
   deletion_protection       = var.deletion_protection
   skip_final_snapshot       = var.skip_final_snapshot
   final_snapshot_identifier = var.skip_final_snapshot ? null : "${var.cluster_id}-hyperfleet-db-final"
+
+  iam_database_authentication_enabled = true
+
+  tags = {
+    Name      = "${var.cluster_id}-hyperfleet-db"
+    Component = "hyperfleet-db"
+    ManagedBy = "terraform"
+  }
+}
+
+# =============================================================================
+# Aurora PostgreSQL Writer Instance
+# =============================================================================
+
+resource "aws_rds_cluster_instance" "hyperfleet_db" {
+  identifier         = "${var.cluster_id}-hyperfleet-db-writer"
+  cluster_identifier = aws_rds_cluster.hyperfleet_db.id
+
+  engine         = aws_rds_cluster.hyperfleet_db.engine
+  engine_version = aws_rds_cluster.hyperfleet_db.engine_version
+  instance_class = var.instance_class
+
+  db_parameter_group_name = aws_db_parameter_group.hyperfleet_db.name
+  publicly_accessible     = false
 
   performance_insights_enabled    = var.performance_insights_enabled
   performance_insights_kms_key_id = var.performance_insights_enabled ? aws_kms_key.hyperfleet_db.arn : null
@@ -229,11 +261,10 @@ resource "aws_db_instance" "hyperfleet_db" {
   monitoring_interval = var.monitoring_interval
   monitoring_role_arn = var.monitoring_interval > 0 ? aws_iam_role.rds_monitoring[0].arn : null
 
-  iam_database_authentication_enabled = true
-  auto_minor_version_upgrade          = true
+  auto_minor_version_upgrade = true
 
   tags = {
-    Name      = "${var.cluster_id}-hyperfleet-db"
+    Name      = "${var.cluster_id}-hyperfleet-db-writer"
     Component = "hyperfleet-db"
     ManagedBy = "terraform"
   }
@@ -264,13 +295,13 @@ resource "aws_secretsmanager_secret_version" "dsn" {
   secret_id = aws_secretsmanager_secret.dsn.id
   secret_string = join("", [
     "postgres://",
-    aws_db_instance.hyperfleet_db.username,
+    aws_rds_cluster.hyperfleet_db.master_username,
     ":",
     random_password.master.result,
     "@",
-    aws_db_instance.hyperfleet_db.endpoint,
+    aws_rds_cluster.hyperfleet_db.endpoint,
     "/",
-    aws_db_instance.hyperfleet_db.db_name,
+    aws_rds_cluster.hyperfleet_db.database_name,
     "?sslmode=require",
   ])
 }

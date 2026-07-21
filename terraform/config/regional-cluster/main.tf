@@ -416,10 +416,8 @@ module "hyperfleet_db" {
   private_subnet_ids = module.vpc.private_subnet_ids
   vpc_cidr           = module.vpc.vpc_cidr
 
-  instance_class        = var.hyperfleet_db_instance_class
-  allocated_storage     = var.hyperfleet_db_allocated_storage
-  max_allocated_storage = var.hyperfleet_db_max_allocated_storage
-  engine_version        = var.hyperfleet_db_engine_version
+  instance_class = var.hyperfleet_db_instance_class
+  engine_version = var.hyperfleet_db_engine_version
 
   backup_retention_period      = var.hyperfleet_db_backup_retention_period
   deletion_protection          = var.hyperfleet_db_deletion_protection

@@ -3,23 +3,23 @@
 # =============================================================================
 
 output "endpoint" {
-  description = "RDS instance endpoint (host:port)"
-  value       = aws_db_instance.hyperfleet_db.endpoint
+  description = "Aurora cluster endpoint (host:port)"
+  value       = aws_rds_cluster.hyperfleet_db.endpoint
 }
 
 output "address" {
-  description = "RDS instance hostname"
-  value       = aws_db_instance.hyperfleet_db.address
+  description = "Aurora cluster hostname"
+  value       = aws_rds_cluster.hyperfleet_db.endpoint
 }
 
 output "port" {
-  description = "RDS instance port"
-  value       = aws_db_instance.hyperfleet_db.port
+  description = "Aurora cluster port"
+  value       = aws_rds_cluster.hyperfleet_db.port
 }
 
 output "database_name" {
   description = "Database name"
-  value       = aws_db_instance.hyperfleet_db.db_name
+  value       = aws_rds_cluster.hyperfleet_db.database_name
 }
 
 output "dsn_secret_arn" {
@@ -38,16 +38,16 @@ output "master_password_secret_arn" {
 }
 
 output "security_group_id" {
-  description = "Security group ID for the RDS instance"
+  description = "Security group ID for the Aurora cluster"
   value       = aws_security_group.hyperfleet_db.id
 }
 
 output "kms_key_arn" {
-  description = "KMS key ARN used for RDS encryption"
+  description = "KMS key ARN used for Aurora encryption"
   value       = aws_kms_key.hyperfleet_db.arn
 }
 
-output "instance_id" {
-  description = "RDS instance identifier"
-  value       = aws_db_instance.hyperfleet_db.id
+output "cluster_id" {
+  description = "Aurora cluster identifier"
+  value       = aws_rds_cluster.hyperfleet_db.id
 }

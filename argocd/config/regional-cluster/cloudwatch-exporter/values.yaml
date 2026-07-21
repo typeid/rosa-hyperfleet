@@ -102,9 +102,6 @@ prometheus-yet-another-cloudwatch-exporter:
             - name: SwapUsage
               statistics: [Average]
               nilToZero: true
-            - name: FreeStorageSpace
-              statistics: [Average]
-              nilToZero: true
             - name: DatabaseConnections
               statistics: [Sum]
               nilToZero: true
@@ -135,7 +132,13 @@ prometheus-yet-another-cloudwatch-exporter:
             - name: NetworkTransmitThroughput
               statistics: [Average]
               nilToZero: true
-            - name: BurstBalance
+            - name: VolumeBytesUsed
+              statistics: [Average]
+              nilToZero: true
+            - name: VolumeReadIOPs
+              statistics: [Average]
+              nilToZero: true
+            - name: VolumeWriteIOPs
               statistics: [Average]
               nilToZero: true
 

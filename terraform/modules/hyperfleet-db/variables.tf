@@ -8,42 +8,30 @@ variable "cluster_id" {
 }
 
 variable "vpc_id" {
-  description = "VPC ID where RDS will be deployed"
+  description = "VPC ID where Aurora will be deployed"
   type        = string
 }
 
 variable "private_subnet_ids" {
-  description = "Private subnet IDs for RDS subnet group (Multi-AZ requires >= 2 AZs)"
+  description = "Private subnet IDs for Aurora subnet group (requires >= 2 AZs)"
   type        = list(string)
 }
 
 variable "vpc_cidr" {
-  description = "VPC CIDR block — allowed to connect to the RDS instance"
+  description = "VPC CIDR block — allowed to connect to the Aurora cluster"
   type        = string
 }
 
 variable "instance_class" {
-  description = "RDS instance class"
+  description = "Aurora instance class"
   type        = string
   default     = "db.r6g.large"
 }
 
-variable "allocated_storage" {
-  description = "Initial storage allocation in GiB"
-  type        = number
-  default     = 100
-}
-
-variable "max_allocated_storage" {
-  description = "Maximum storage for autoscaling in GiB (0 disables autoscaling)"
-  type        = number
-  default     = 500
-}
-
 variable "engine_version" {
-  description = "PostgreSQL engine version"
+  description = "Aurora PostgreSQL engine version"
   type        = string
-  default     = "16.9"
+  default     = "16.13"
 }
 
 variable "database_name" {

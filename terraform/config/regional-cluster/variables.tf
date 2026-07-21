@@ -116,27 +116,15 @@ variable "enable_sns_alerting" {
 # =============================================================================
 
 variable "hyperfleet_db_instance_class" {
-  description = "RDS instance class for HyperFleet DB"
+  description = "Aurora instance class for HyperFleet DB"
   type        = string
   default     = "db.r6g.large"
 }
 
-variable "hyperfleet_db_allocated_storage" {
-  description = "Initial storage allocation in GiB for HyperFleet DB RDS"
-  type        = number
-  default     = 100
-}
-
-variable "hyperfleet_db_max_allocated_storage" {
-  description = "Maximum storage for autoscaling in GiB (0 disables)"
-  type        = number
-  default     = 500
-}
-
 variable "hyperfleet_db_engine_version" {
-  description = "PostgreSQL engine version for HyperFleet DB"
+  description = "Aurora PostgreSQL engine version for HyperFleet DB"
   type        = string
-  default     = "16.9"
+  default     = "16.13"
 }
 
 variable "hyperfleet_db_backup_retention_period" {
@@ -146,7 +134,7 @@ variable "hyperfleet_db_backup_retention_period" {
 }
 
 variable "hyperfleet_db_deletion_protection" {
-  description = "Enable deletion protection for HyperFleet DB RDS"
+  description = "Enable deletion protection for HyperFleet DB Aurora"
   type        = bool
   default     = true
 }
@@ -158,13 +146,13 @@ variable "hyperfleet_db_skip_final_snapshot" {
 }
 
 variable "hyperfleet_db_performance_insights_enabled" {
-  description = "Enable Performance Insights for HyperFleet DB RDS"
+  description = "Enable Performance Insights for HyperFleet DB Aurora"
   type        = bool
   default     = true
 }
 
 variable "hyperfleet_db_monitoring_interval" {
-  description = "Enhanced Monitoring interval in seconds for HyperFleet DB RDS (0 to disable)"
+  description = "Enhanced Monitoring interval in seconds for HyperFleet DB Aurora (0 to disable)"
   type        = number
   default     = 60
 }
