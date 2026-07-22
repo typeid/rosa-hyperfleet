@@ -24,8 +24,9 @@ platform:
     port: 3100
     targetType: ip
   # SRE UI ALB — injected at runtime by ApplicationSet; empty when ALB is not deployed
-  sreQueryFrontendTargetGroup:
-    arn: ""
+  sre:
+    targetGroup:
+      arn: ""
 
 serviceAccount:
   name: loki

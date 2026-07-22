@@ -42,7 +42,7 @@ usage() {
     echo "  shell           Interactive shell for Platform API access"
     echo "  bastion         Connect to RC/MC bastion in an ephemeral env"
     echo "  port-forward    Forward ports through RC/MC bastion in an ephemeral env"
-  echo "  sre-ui          Tunnel SRE UI tools through the internal ALB via bastion"
+    echo "  sre-ui          Tunnel SRE UI tools through the internal ALB via bastion"
     echo "  e2e             Run e2e tests against an ephemeral env"
     echo "  collect-logs    Collect kubernetes logs from RC/MC in an ephemeral env"
 }

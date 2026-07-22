@@ -90,7 +90,7 @@ spec:
                 arn: '{{ .metadata.annotations.thanos_query_target_group_arn }}'
               # SRE UI ALB target group ARNs (empty when enable_sre_tools_gateway = false)
               sre:
-                queryTargetGroup:
+                targetGroup:
                   arn: '{{ .metadata.annotations.sre_thanos_target_group_arn }}'
             # Loki platform values (keys must match chart's values.yaml structure)
             platform:
@@ -100,8 +100,9 @@ spec:
               queryFrontendTargetGroup:
                 arn: '{{ .metadata.annotations.loki_query_frontend_target_group_arn }}'
               # SRE UI ALB target group ARNs (empty when enable_sre_tools_gateway = false)
-              sreQueryFrontendTargetGroup:
-                arn: '{{ .metadata.annotations.sre_loki_target_group_arn }}'
+              sre:
+                targetGroup:
+                  arn: '{{ .metadata.annotations.sre_loki_target_group_arn }}'
             # Loki subchart runtime values (bucket names, region, SSE-KMS)
             loki:
               loki:

@@ -69,6 +69,22 @@ variable "environment_domain" {
 }
 
 # =============================================================================
+# Access log retention (FedRAMP AU-11)
+# =============================================================================
+
+variable "access_logs_standard_days" {
+  description = "Days to keep access logs in S3 Standard before transitioning to Glacier. FedRAMP Moderate floor is 90 days."
+  type        = number
+  default     = 90
+}
+
+variable "access_logs_glacier_days" {
+  description = "Days after which access logs in Glacier are permanently deleted. Total retention = standard_days + this value."
+  type        = number
+  default     = 275 # 90 standard + 275 glacier = 365 days total
+}
+
+# =============================================================================
 # ALB behaviour
 # =============================================================================
 

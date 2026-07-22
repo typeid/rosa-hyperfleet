@@ -134,5 +134,5 @@ thanos:
     targetType: ip
   # SRE UI ALB — injected at runtime by ApplicationSet; empty when ALB is not deployed
   sre:
-    queryTargetGroup:
+    targetGroup:
       arn: ""

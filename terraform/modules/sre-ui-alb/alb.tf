@@ -40,13 +40,10 @@ resource "aws_lb" "sre" {
   security_groups    = [aws_security_group.alb.id]
   subnets            = local.subnet_ids
 
-  dynamic "access_logs" {
-    for_each = [1]
-    content {
-      bucket  = aws_s3_bucket.access_logs.id
-      prefix  = "alb"
-      enabled = true
-    }
+  access_logs {
+    bucket  = aws_s3_bucket.access_logs.id
+    prefix  = "alb"
+    enabled = true
   }
 
   tags = {

@@ -1,9 +1,13 @@
 # =============================================================================
-# ALB Access Logs (FedRAMP AU-09)
+# ALB Access Logs (FedRAMP AU-09, AU-11)
 #
 # S3 bucket for ALB access logs. SSE-S3 (AES256) is used because the ELB
 # service cannot write to SSE-KMS buckets — it does not call
 # kms:GenerateDataKey and access is denied at the S3 layer.
+#
+# Retention (AU-11): configurable hot/cold periods.
+#   Default: 90 days Standard (FedRAMP Moderate floor), then Glacier,
+#            expire after 1 year total.
 # =============================================================================
 
 data "aws_caller_identity" "current" {}
@@ -19,6 +23,24 @@ resource "aws_s3_bucket" "access_logs" {
 
   tags = {
     Name = "${var.regional_id}-sre-alb-logs"
+  }
+}
+
+resource "aws_s3_bucket_lifecycle_configuration" "access_logs" {
+  bucket = aws_s3_bucket.access_logs.id
+
+  rule {
+    id     = "access-log-retention"
+    status = "Enabled"
+
+    transition {
+      days          = var.access_logs_standard_days
+      storage_class = "GLACIER"
+    }
+
+    expiration {
+      days = var.access_logs_standard_days + var.access_logs_glacier_days
+    }
   }
 }
 
