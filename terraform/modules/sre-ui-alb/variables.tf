@@ -116,67 +116,12 @@ variable "oidc_issuer_url" {
   default     = "https://auth.redhat.com/auth/realms/EmployeeIDP"
 }
 
-variable "grafana_oidc_client_id" {
-  description = "OIDC client ID for Grafana. Required when oidc_enabled = true."
-  type        = string
-  default     = ""
-}
-
-variable "grafana_oidc_client_secret" {
-  description = "OIDC client secret for Grafana."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "argocd_oidc_client_id" {
-  description = "OIDC client ID for ArgoCD. Required when oidc_enabled = true."
-  type        = string
-  default     = ""
-}
-
-variable "argocd_oidc_client_secret" {
-  description = "OIDC client secret for ArgoCD."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "prometheus_oidc_client_id" {
-  description = "OIDC client ID for Prometheus. Required when oidc_enabled = true."
-  type        = string
-  default     = ""
-}
-
-variable "prometheus_oidc_client_secret" {
-  description = "OIDC client secret for Prometheus."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "thanos_oidc_client_id" {
-  description = "OIDC client ID for Thanos. Required when oidc_enabled = true."
-  type        = string
-  default     = ""
-}
-
-variable "thanos_oidc_client_secret" {
-  description = "OIDC client secret for Thanos."
-  type        = string
-  default     = ""
-  sensitive   = true
-}
-
-variable "loki_oidc_client_id" {
-  description = "OIDC client ID for Loki. Required when oidc_enabled = true."
-  type        = string
-  default     = ""
-}
-
-variable "loki_oidc_client_secret" {
-  description = "OIDC client secret for Loki."
-  type        = string
-  default     = ""
-  sensitive   = true
+variable "oidc_clients" {
+  description = "Per-service OIDC client credentials. Map key must match a service name in local.services (grafana, argocd, prometheus, thanos, loki). Required when oidc_enabled = true."
+  type = map(object({
+    client_id     = string
+    client_secret = string
+  }))
+  default   = {}
+  sensitive = true
 }

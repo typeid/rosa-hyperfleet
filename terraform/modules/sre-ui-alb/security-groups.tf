@@ -3,7 +3,7 @@
 #
 # One security group for the SRE ALB:
 # - Ingress HTTPS (443) from VPC CIDR (internal) or allowed_source_cidrs (public; must be non-empty)
-# - Egress to node SG on container ports: 3000 (Grafana), 8080 (ArgoCD), 9090 (Prometheus/Thanos), 3100 (Loki)
+# - Egress to node SG on unique container ports derived from local.services
 #
 # Node SG ingress rules allow the ALB to reach pods on each service port.
 # =============================================================================
@@ -61,43 +61,15 @@ resource "aws_vpc_security_group_ingress_rule" "alb_https_from_cidr" {
 }
 
 
-# Egress: to Grafana pods (port 3000 — container port behind service port 80)
-resource "aws_vpc_security_group_egress_rule" "alb_to_http_services" {
-  security_group_id            = aws_security_group.alb.id
-  description                  = "Allow traffic to Grafana pods (port 3000)"
-  ip_protocol                  = "tcp"
-  from_port                    = 3000
-  to_port                      = 3000
-  referenced_security_group_id = var.node_security_group_id
-}
+# Egress: one rule per unique container port derived from local.services
+resource "aws_vpc_security_group_egress_rule" "alb_to_pods" {
+  for_each = local.unique_sg_ports
 
-# Egress: to ArgoCD pods (port 8080 — container port behind service port 443)
-resource "aws_vpc_security_group_egress_rule" "alb_to_argocd" {
   security_group_id            = aws_security_group.alb.id
-  description                  = "Allow traffic to ArgoCD pods (port 8080)"
+  description                  = "Allow ALB traffic to pods on port ${each.value}"
   ip_protocol                  = "tcp"
-  from_port                    = 8080
-  to_port                      = 8080
-  referenced_security_group_id = var.node_security_group_id
-}
-
-# Egress: to Prometheus and Thanos pods (port 9090)
-resource "aws_vpc_security_group_egress_rule" "alb_to_metrics_services" {
-  security_group_id            = aws_security_group.alb.id
-  description                  = "Allow traffic to Prometheus and Thanos QFE pods (port 9090)"
-  ip_protocol                  = "tcp"
-  from_port                    = 9090
-  to_port                      = 9090
-  referenced_security_group_id = var.node_security_group_id
-}
-
-# Egress: to Loki pods (port 3100)
-resource "aws_vpc_security_group_egress_rule" "alb_to_loki" {
-  security_group_id            = aws_security_group.alb.id
-  description                  = "Allow traffic to Loki Query Frontend pods (port 3100)"
-  ip_protocol                  = "tcp"
-  from_port                    = 3100
-  to_port                      = 3100
+  from_port                    = tonumber(each.value)
+  to_port                      = tonumber(each.value)
   referenced_security_group_id = var.node_security_group_id
 }
 
@@ -108,38 +80,14 @@ resource "aws_vpc_security_group_egress_rule" "alb_to_loki" {
 # For EKS Auto Mode, targets the cluster_primary_security_group_id.
 # -----------------------------------------------------------------------------
 
-resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb_http" {
-  security_group_id            = var.node_security_group_id
-  description                  = "Allow SRE ALB traffic to Grafana pods (port 3000)"
-  ip_protocol                  = "tcp"
-  from_port                    = 3000
-  to_port                      = 3000
-  referenced_security_group_id = aws_security_group.alb.id
-}
+# Node SG ingress: one rule per unique container port derived from local.services
+resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb" {
+  for_each = local.unique_sg_ports
 
-resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb_argocd" {
   security_group_id            = var.node_security_group_id
-  description                  = "Allow SRE ALB traffic to ArgoCD pods (port 8080)"
+  description                  = "Allow SRE ALB traffic to pods on port ${each.value}"
   ip_protocol                  = "tcp"
-  from_port                    = 8080
-  to_port                      = 8080
-  referenced_security_group_id = aws_security_group.alb.id
-}
-
-resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb_metrics" {
-  security_group_id            = var.node_security_group_id
-  description                  = "Allow SRE ALB traffic to Prometheus and Thanos QFE pods (port 9090)"
-  ip_protocol                  = "tcp"
-  from_port                    = 9090
-  to_port                      = 9090
-  referenced_security_group_id = aws_security_group.alb.id
-}
-
-resource "aws_vpc_security_group_ingress_rule" "nodes_from_alb_loki" {
-  security_group_id            = var.node_security_group_id
-  description                  = "Allow SRE ALB traffic to Loki Query Frontend pods (port 3100)"
-  ip_protocol                  = "tcp"
-  from_port                    = 3100
-  to_port                      = 3100
+  from_port                    = tonumber(each.value)
+  to_port                      = tonumber(each.value)
   referenced_security_group_id = aws_security_group.alb.id
 }

@@ -344,6 +344,15 @@ preflight() {
     [[ -z "$missing" ]] || die "Missing required tools:$missing"
 }
 
+# Register cleanup_fn as the EXIT handler and chain the previously-registered
+# trap so it still fires afterwards. Isolates the capture/eval boilerplate so
+# callers only define their cleanup logic.
+chain_exit_trap() {
+    local fn="$1"
+    _chain_exit_prev=$(trap -p EXIT | sed "s/^trap -- '//;s/' EXIT$//")
+    trap "${fn}; eval \"\$_chain_exit_prev\"" EXIT
+}
+
 # =============================================================================
 # Commands
 # =============================================================================
@@ -874,8 +883,6 @@ cmd_bastion_port_forward() {
     ssm_pids=()
     bastion_pids=()
 
-    # Chain with the existing EXIT trap (setup_aws_config cleanup)
-    _prev_trap=$(trap -p EXIT | sed "s/^trap -- '//;s/' EXIT$//")
     cleanup() {
     echo ""
     echo "Stopping all port-forward sessions..."
@@ -886,9 +893,8 @@ cmd_bastion_port_forward() {
         kill "$pid" 2>/dev/null || true
         wait "$pid" 2>/dev/null || true
     done
-    eval "$_prev_trap"
     }
-    trap cleanup EXIT
+    chain_exit_trap cleanup
 
     target="ecs:${ecs_cluster}_${task_id}_${runtime_id}"
 
@@ -1111,13 +1117,11 @@ cmd_sre_tunnel() {
     [[ -n "$alb_dns" ]] || die "Could not retrieve SRE ALB DNS. Is the SRE gateway deployed?"
     [[ -n "$sre_domain" ]] || die "Could not retrieve SRE domain."
 
-    _prev_trap=$(trap -p EXIT | sed "s/^trap -- '//;s/' EXIT$//")
     cleanup() {
         echo ""; echo "Closing SRE UI tunnel..."
         kill "$ssm_pid" 2>/dev/null || true
-        eval "$_prev_trap"
     }
-    trap cleanup EXIT
+    chain_exit_trap cleanup
 
     echo "==> [local] SSM tunnel localhost:${local_port} -> ${alb_dns}:443"
     aws ssm start-session \

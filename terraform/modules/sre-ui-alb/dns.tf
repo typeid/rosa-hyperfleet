@@ -61,13 +61,7 @@ resource "aws_acm_certificate_validation" "sre" {
 # -----------------------------------------------------------------------------
 
 locals {
-  sre_services = local.has_domain ? [
-    "grafana",
-    "argocd",
-    "prometheus",
-    "thanos",
-    "loki",
-  ] : []
+  sre_services = local.has_domain ? keys(local.services) : []
 }
 
 resource "aws_route53_record" "sre" {

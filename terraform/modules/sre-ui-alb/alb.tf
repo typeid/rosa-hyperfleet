@@ -19,7 +19,6 @@ locals {
   has_domain = var.environment_domain != null && var.environment_domain != ""
   subnet_ids = var.internal ? var.private_subnet_ids : var.public_subnet_ids
 
-
   # AWS target group names are capped at 32 chars. The longest suffix we append
   # is "-sre-prometheus" (15 chars), so cap regional_id at 17 chars.
   tg_prefix = substr(var.regional_id, 0, min(length(var.regional_id), 17))
@@ -27,6 +26,51 @@ locals {
   oidc_authorization_endpoint = "${var.oidc_issuer_url}/protocol/openid-connect/auth"
   oidc_token_endpoint         = "${var.oidc_issuer_url}/protocol/openid-connect/token"
   oidc_user_info_endpoint     = "${var.oidc_issuer_url}/protocol/openid-connect/userinfo"
+
+  # Service map — single source of truth for per-service config.
+  # tg_port/protocol: target group settings.
+  # sg_port: actual container port used for security group rules.
+  # Adding a new service is a one-liner here; everything else derives from this map.
+  services = {
+    grafana = {
+      tg_port     = 80
+      protocol    = "HTTP"
+      sg_port     = 3000
+      health_path = "/api/health"
+      priority    = 100
+    }
+    argocd = {
+      tg_port     = 443
+      protocol    = "HTTPS"
+      sg_port     = 8080
+      health_path = "/healthz"
+      priority    = 200
+    }
+    prometheus = {
+      tg_port     = 9090
+      protocol    = "HTTP"
+      sg_port     = 9090
+      health_path = "/-/ready"
+      priority    = 300
+    }
+    thanos = {
+      tg_port     = 9090
+      protocol    = "HTTP"
+      sg_port     = 9090
+      health_path = "/-/ready"
+      priority    = 400
+    }
+    loki = {
+      tg_port     = 3100
+      protocol    = "HTTP"
+      sg_port     = 3100
+      health_path = "/ready"
+      priority    = 500
+    }
+  }
+
+  # Unique container ports — used to generate security group rules.
+  unique_sg_ports = toset([for svc in local.services : tostring(svc.sg_port)])
 }
 
 # -----------------------------------------------------------------------------
@@ -65,18 +109,20 @@ resource "aws_lb" "sre" {
 # All use IP target type for TargetGroupBinding compatibility with EKS Auto Mode.
 # -----------------------------------------------------------------------------
 
-resource "aws_lb_target_group" "grafana" {
-  name        = "${local.tg_prefix}-sre-grafana"
-  port        = 80
-  protocol    = "HTTP"
+resource "aws_lb_target_group" "services" {
+  for_each = local.services
+
+  name        = "${local.tg_prefix}-sre-${each.key}"
+  port        = each.value.tg_port
+  protocol    = each.value.protocol
   vpc_id      = var.vpc_id
   target_type = "ip"
 
   health_check {
     enabled             = true
-    path                = "/api/health"
+    path                = each.value.health_path
     port                = "traffic-port"
-    protocol            = "HTTP"
+    protocol            = each.value.protocol
     healthy_threshold   = 2
     unhealthy_threshold = 3
     timeout             = 5
@@ -85,107 +131,7 @@ resource "aws_lb_target_group" "grafana" {
   }
 
   tags = {
-    Name                   = "${var.regional_id}-sre-grafana"
-    "eks:eks-cluster-name" = var.cluster_name
-  }
-}
-
-resource "aws_lb_target_group" "argocd" {
-  name        = "${local.tg_prefix}-sre-argocd"
-  port        = 443
-  protocol    = "HTTPS"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    path                = "/healthz"
-    port                = "traffic-port"
-    protocol            = "HTTPS"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 5
-    interval            = 30
-    matcher             = "200"
-  }
-
-  tags = {
-    Name                   = "${var.regional_id}-sre-argocd"
-    "eks:eks-cluster-name" = var.cluster_name
-  }
-}
-
-resource "aws_lb_target_group" "prometheus" {
-  name        = "${local.tg_prefix}-sre-prometheus"
-  port        = 9090
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    path                = "/-/ready"
-    port                = "traffic-port"
-    protocol            = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 5
-    interval            = 30
-    matcher             = "200"
-  }
-
-  tags = {
-    Name                   = "${var.regional_id}-sre-prometheus"
-    "eks:eks-cluster-name" = var.cluster_name
-  }
-}
-
-resource "aws_lb_target_group" "thanos" {
-  name        = "${local.tg_prefix}-sre-thanos"
-  port        = 9090
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    path                = "/-/ready"
-    port                = "traffic-port"
-    protocol            = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 5
-    interval            = 30
-    matcher             = "200"
-  }
-
-  tags = {
-    Name                   = "${var.regional_id}-sre-thanos"
-    "eks:eks-cluster-name" = var.cluster_name
-  }
-}
-
-resource "aws_lb_target_group" "loki" {
-  name        = "${local.tg_prefix}-sre-loki"
-  port        = 3100
-  protocol    = "HTTP"
-  vpc_id      = var.vpc_id
-  target_type = "ip"
-
-  health_check {
-    enabled             = true
-    path                = "/ready"
-    port                = "traffic-port"
-    protocol            = "HTTP"
-    healthy_threshold   = 2
-    unhealthy_threshold = 3
-    timeout             = 5
-    interval            = 30
-    matcher             = "200"
-  }
-
-  tags = {
-    Name                   = "${var.regional_id}-sre-loki"
+    Name                   = "${var.regional_id}-sre-${each.key}"
     "eks:eks-cluster-name" = var.cluster_name
   }
 }
@@ -244,9 +190,11 @@ locals {
 # When not oidc_enabled, forward directly.
 # -----------------------------------------------------------------------------
 
-resource "aws_lb_listener_rule" "grafana" {
+resource "aws_lb_listener_rule" "services" {
+  for_each = local.services
+
   listener_arn = local.listener_arn
-  priority     = 100
+  priority     = each.value.priority
 
   dynamic "action" {
     for_each = var.oidc_enabled ? [1] : []
@@ -258,8 +206,8 @@ resource "aws_lb_listener_rule" "grafana" {
         authorization_endpoint     = local.oidc_authorization_endpoint
         token_endpoint             = local.oidc_token_endpoint
         user_info_endpoint         = local.oidc_user_info_endpoint
-        client_id                  = var.grafana_oidc_client_id
-        client_secret              = var.grafana_oidc_client_secret
+        client_id                  = try(var.oidc_clients[each.key].client_id, "")
+        client_secret              = try(var.oidc_clients[each.key].client_secret, "")
         scope                      = "openid email profile"
         session_timeout            = 28800
         on_unauthenticated_request = "authenticate"
@@ -270,156 +218,12 @@ resource "aws_lb_listener_rule" "grafana" {
   action {
     order            = var.oidc_enabled ? 2 : 1
     type             = "forward"
-    target_group_arn = aws_lb_target_group.grafana.arn
+    target_group_arn = aws_lb_target_group.services[each.key].arn
   }
 
   condition {
     host_header {
-      values = local.has_domain ? ["grafana.sre.${var.deployment_name}.${var.environment_domain}"] : ["grafana.sre.*"]
-    }
-  }
-}
-
-resource "aws_lb_listener_rule" "argocd" {
-  listener_arn = local.listener_arn
-  priority     = 200
-
-  dynamic "action" {
-    for_each = var.oidc_enabled ? [1] : []
-    content {
-      order = 1
-      type  = "authenticate-oidc"
-      authenticate_oidc {
-        issuer                     = var.oidc_issuer_url
-        authorization_endpoint     = local.oidc_authorization_endpoint
-        token_endpoint             = local.oidc_token_endpoint
-        user_info_endpoint         = local.oidc_user_info_endpoint
-        client_id                  = var.argocd_oidc_client_id
-        client_secret              = var.argocd_oidc_client_secret
-        scope                      = "openid email profile"
-        session_timeout            = 28800
-        on_unauthenticated_request = "authenticate"
-      }
-    }
-  }
-
-  action {
-    order            = var.oidc_enabled ? 2 : 1
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.argocd.arn
-  }
-
-  condition {
-    host_header {
-      values = local.has_domain ? ["argocd.sre.${var.deployment_name}.${var.environment_domain}"] : ["argocd.sre.*"]
-    }
-  }
-}
-
-resource "aws_lb_listener_rule" "prometheus" {
-  listener_arn = local.listener_arn
-  priority     = 300
-
-  dynamic "action" {
-    for_each = var.oidc_enabled ? [1] : []
-    content {
-      order = 1
-      type  = "authenticate-oidc"
-      authenticate_oidc {
-        issuer                     = var.oidc_issuer_url
-        authorization_endpoint     = local.oidc_authorization_endpoint
-        token_endpoint             = local.oidc_token_endpoint
-        user_info_endpoint         = local.oidc_user_info_endpoint
-        client_id                  = var.prometheus_oidc_client_id
-        client_secret              = var.prometheus_oidc_client_secret
-        scope                      = "openid email profile"
-        session_timeout            = 28800
-        on_unauthenticated_request = "authenticate"
-      }
-    }
-  }
-
-  action {
-    order            = var.oidc_enabled ? 2 : 1
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.prometheus.arn
-  }
-
-  condition {
-    host_header {
-      values = local.has_domain ? ["prometheus.sre.${var.deployment_name}.${var.environment_domain}"] : ["prometheus.sre.*"]
-    }
-  }
-}
-
-resource "aws_lb_listener_rule" "thanos" {
-  listener_arn = local.listener_arn
-  priority     = 400
-
-  dynamic "action" {
-    for_each = var.oidc_enabled ? [1] : []
-    content {
-      order = 1
-      type  = "authenticate-oidc"
-      authenticate_oidc {
-        issuer                     = var.oidc_issuer_url
-        authorization_endpoint     = local.oidc_authorization_endpoint
-        token_endpoint             = local.oidc_token_endpoint
-        user_info_endpoint         = local.oidc_user_info_endpoint
-        client_id                  = var.thanos_oidc_client_id
-        client_secret              = var.thanos_oidc_client_secret
-        scope                      = "openid email profile"
-        session_timeout            = 28800
-        on_unauthenticated_request = "authenticate"
-      }
-    }
-  }
-
-  action {
-    order            = var.oidc_enabled ? 2 : 1
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.thanos.arn
-  }
-
-  condition {
-    host_header {
-      values = local.has_domain ? ["thanos.sre.${var.deployment_name}.${var.environment_domain}"] : ["thanos.sre.*"]
-    }
-  }
-}
-
-resource "aws_lb_listener_rule" "loki" {
-  listener_arn = local.listener_arn
-  priority     = 500
-
-  dynamic "action" {
-    for_each = var.oidc_enabled ? [1] : []
-    content {
-      order = 1
-      type  = "authenticate-oidc"
-      authenticate_oidc {
-        issuer                     = var.oidc_issuer_url
-        authorization_endpoint     = local.oidc_authorization_endpoint
-        token_endpoint             = local.oidc_token_endpoint
-        user_info_endpoint         = local.oidc_user_info_endpoint
-        client_id                  = var.loki_oidc_client_id
-        client_secret              = var.loki_oidc_client_secret
-        scope                      = "openid email profile"
-        session_timeout            = 28800
-        on_unauthenticated_request = "authenticate"
-      }
-    }
-  }
-
-  action {
-    order            = var.oidc_enabled ? 2 : 1
-    type             = "forward"
-    target_group_arn = aws_lb_target_group.loki.arn
-  }
-
-  condition {
-    host_header {
-      values = local.has_domain ? ["loki.sre.${var.deployment_name}.${var.environment_domain}"] : ["loki.sre.*"]
+      values = local.has_domain ? ["${each.key}.sre.${var.deployment_name}.${var.environment_domain}"] : ["${each.key}.sre.*"]
     }
   }
 }

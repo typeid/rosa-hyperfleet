@@ -4,27 +4,27 @@
 
 output "grafana_target_group_arn" {
   description = "ARN of the Grafana ALB target group"
-  value       = aws_lb_target_group.grafana.arn
+  value       = aws_lb_target_group.services["grafana"].arn
 }
 
 output "argocd_target_group_arn" {
   description = "ARN of the ArgoCD ALB target group"
-  value       = aws_lb_target_group.argocd.arn
+  value       = aws_lb_target_group.services["argocd"].arn
 }
 
 output "prometheus_target_group_arn" {
   description = "ARN of the Prometheus ALB target group"
-  value       = aws_lb_target_group.prometheus.arn
+  value       = aws_lb_target_group.services["prometheus"].arn
 }
 
 output "thanos_target_group_arn" {
   description = "ARN of the Thanos Query Frontend ALB target group"
-  value       = aws_lb_target_group.thanos.arn
+  value       = aws_lb_target_group.services["thanos"].arn
 }
 
 output "loki_target_group_arn" {
   description = "ARN of the Loki Query Frontend ALB target group"
-  value       = aws_lb_target_group.loki.arn
+  value       = aws_lb_target_group.services["loki"].arn
 }
 
 output "alb_dns_name" {
