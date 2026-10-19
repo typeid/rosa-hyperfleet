@@ -38,7 +38,7 @@ Detailed architecture and rationale for key technical decisions:
 | [Pipeline-Based Lifecycle](design/pipeline-based-lifecycle.md)                       | Current CodePipeline hierarchy (superseded for orchestration)             |
 | [Rate Limiting](design/rate-limiting-architecture.md)                                | Per-account rate limiting for Platform API                                |
 | [Regional Account Minting](design/regional-account-minting.md)                       | AWS account structure and minting pipelines                               |
-| [Regional Control Plane Architecture](design/regional-control-plane-architecture.md) | Operator + PostgreSQL control plane (seaplane-operator, seaplane-db)  |
+| [Regional Control Plane Architecture](design/regional-control-plane-architecture.md) | Operator + PostgreSQL control plane (seaplane-operator, seaplane-db)      |
 | [Regional OIDC Ownership](design/regional-oidc-ownership.md)                         | Shared OIDC bucket per region, cross-account MC writes                    |
 | [Spec-to-PR Agent](design/spec-to-pr-agent.md)                                       | AI agent workflow for spec-driven implementation                          |
 | [SRE UI Access](design/sre-ui-access.md)                                             | ALB + OIDC access to SRE UIs replacing SSM port-forward                   |
@@ -57,7 +57,7 @@ Detailed architecture and rationale for key technical decisions:
 | [Provision a Hosted Cluster](hostedcluster-provisioning.md)          | Create and access a ROSA HCP cluster         |
 | [Hosted Cluster Teardown](hostedcluster-teardown.md)                 | Admin-only manual teardown and force cleanup |
 | [Adding Alerting Rules](adding-alerting-rules.md)                    | Platform alerting and recording rules        |
-| [Konflux onboarding](konflux-onboarding.md)                          | Onboard Seaplane images to Konflux CI/CD   |
+| [Konflux onboarding](konflux-onboarding.md)                          | Onboard Seaplane images to Konflux CI/CD     |
 
 ### Reference
 

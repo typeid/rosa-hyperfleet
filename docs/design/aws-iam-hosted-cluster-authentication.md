@@ -105,14 +105,14 @@ If `creatorARN` is not set (e.g. API change not deployed), the ConfigMap is stil
 
 ### Changes by Repository
 
-| Repository            | Files                                                                              | Change                                                                |
-| --------------------- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------- |
+| Repository          | Files                                                                          | Change                                                                |
+| ------------------- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------- |
 | `rosa-seaplane-api` | `seaplane-operator/internal/controller/`, `seaplane-operator/internal/render/` | `aws-iam-auth-config` ConfigMap, HC annotation, `creatorARN` handling |
-| `rosa-seaplane-api` | `pkg/handlers/cluster.go`                                                          | Inject `creatorARN` from SigV4 caller identity                        |
-| `rosa-seaplane-cli` | `internal/commands/cluster/kubeconfig.go`                                          | `rosactl cluster kubeconfig` command                                  |
-| `hypershift`          | `hostedcluster_controller.go`                                                      | ConfigMap sync HC->HCP, annotation in `mirroredAnnotations`           |
-| `hypershift`          | `kas/deployment.go`                                                                | `aws-iam-authenticator` sidecar injection                             |
-| `hypershift`          | `kas/oauth.go`                                                                     | Webhook redirect to localhost:21362                                   |
+| `rosa-seaplane-api` | `pkg/handlers/cluster.go`                                                      | Inject `creatorARN` from SigV4 caller identity                        |
+| `rosa-seaplane-cli` | `internal/commands/cluster/kubeconfig.go`                                      | `rosactl cluster kubeconfig` command                                  |
+| `hypershift`        | `hostedcluster_controller.go`                                                  | ConfigMap sync HC->HCP, annotation in `mirroredAnnotations`           |
+| `hypershift`        | `kas/deployment.go`                                                            | `aws-iam-authenticator` sidecar injection                             |
+| `hypershift`        | `kas/oauth.go`                                                                 | Webhook redirect to localhost:21362                                   |
 
 ### Key Configuration
 

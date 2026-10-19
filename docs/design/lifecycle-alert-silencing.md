@@ -71,12 +71,12 @@ Each desired silence is keyed by `(cluster_id, lifecycle_reason)` with `createdB
 
 ### Lifecycle states
 
-| State             | Meaning                                                                                                                         | MVP |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------------- | --- |
-| `installing`      | Cluster provisioning in progress                                                                                                | Yes |
-| `deleting`        | Cluster teardown in progress                                                                                                    | Yes |
+| State             | Meaning                                                                                                                       | MVP |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------------- | --- |
+| `installing`      | Cluster provisioning in progress                                                                                              | Yes |
+| `deleting`        | Cluster teardown in progress                                                                                                  | Yes |
 | `limited_support` | Cluster marked limited support — **platform-api** writes the condition; **seaplane-operator** projects it to `Cluster` status | No  |
-| `maintenance`     | Planned SRE maintenance window — **platform-api** sets the maintenance condition; operator projects to `Cluster` status         | No  |
+| `maintenance`     | Planned SRE maintenance window — **platform-api** sets the maintenance condition; operator projects to `Cluster` status       | No  |
 
 `limited_support` and `maintenance` are out of MVP until per-state exemption matchers are approved (see below). The reconciler reads only `Cluster` status — never a separate flag source.
 

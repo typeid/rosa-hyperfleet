@@ -6,11 +6,11 @@ Team reference for onboarding Seaplane container images to Konflux and keeping n
 
 ## Konflux environment (Seaplane)
 
-| Setting                     | Value                                                          |
-| --------------------------- | -------------------------------------------------------------- |
-| Konflux cluster             | `kflux-prd-rh02`                                               |
-| Tenant namespace            | `rosa-tenant`                                                  |
-| Quay path prefix            | `quay.io/redhat-user-workloads/rosa-tenant/`                   |
+| Setting                     | Value                                                        |
+| --------------------------- | ------------------------------------------------------------ |
+| Konflux cluster             | `kflux-prd-rh02`                                             |
+| Tenant namespace            | `rosa-tenant`                                                |
+| Quay path prefix            | `quay.io/redhat-user-workloads/rosa-tenant/`                 |
 | Required PR check (example) | `Konflux kflux-prd-rh02 / rosa-seaplane-api-on-pull-request` |
 
 **Links**
@@ -38,7 +38,7 @@ Copy this checklist for each new image. **Onboarded** means steps 1–5 are comp
 | 2   | Add build pipelines                                | App repo `.tekton/*-on-pull-request.yaml` + `*-on-push.yaml`                                                                                                                                                                             | PR merged (Konflux bootstrap PR or hand-copied from a reference repo)                       |
 | 3   | Wire CI gates                                      | [`openshift/release`](https://github.com/openshift/release) branch protection + ci-operator if needed                                                                                                                                    | Required Konflux on-PR context(s) added for the component; see branch-protection note below |
 | 4   | Validate builds                                    | Konflux UI / GitHub checks                                                                                                                                                                                                               | Green `*-on-pull-request` on a test PR and green `*-on-push` on `main`                      |
-| 5   | Point consumers at Konflux image                   | `rosa-seaplane` ArgoCD values (or other deploy repo)                                                                                                                                                                                   | `repository` + `tag: "<full-sha>"` under `redhat-user-workloads/rosa-tenant/…`              |
+| 5   | Point consumers at Konflux image                   | `rosa-seaplane` ArgoCD values (or other deploy repo)                                                                                                                                                                                     | `repository` + `tag: "<full-sha>"` under `redhat-user-workloads/rosa-tenant/…`              |
 
 **Rule for new work:** any new container image that ships to staging or production must complete steps 1–3 before merge and steps 4–5 before release. Do not use ad-hoc personal Quay repos for runtime images.
 
@@ -61,9 +61,9 @@ Run `build-manifests.sh` in `konflux-release-data/tenants-config` before opening
 
 ### New repository vs new component
 
-| Case                                                                   | Application                 | Component          | Repo change                      |
-| ---------------------------------------------------------------------- | --------------------------- | ------------------ | -------------------------------- |
-| New image in an existing repo (like operator in `rosa-seaplane-api`) | Reuse `rosa-seaplane`     | New component name | Add `.tekton/<component>-*.yaml` |
+| Case                                                                 | Application                 | Component          | Repo change                      |
+| -------------------------------------------------------------------- | --------------------------- | ------------------ | -------------------------------- |
+| New image in an existing repo (like operator in `rosa-seaplane-api`) | Reuse `rosa-seaplane`       | New component name | Add `.tekton/<component>-*.yaml` |
 | New standalone repo (like `rosa-seaplane-zoa`)                       | New or existing application | New component      | Full `.tekton/` + release config |
 
 ## Prow and Konflux responsibilities

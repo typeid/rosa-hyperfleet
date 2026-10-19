@@ -15,10 +15,10 @@ A reusable [step-registry workflow](https://github.com/openshift/release/tree/ma
 
 ## Workflow Steps
 
-| Step                                | Image                | Purpose                                                                     |
-| ----------------------------------- | -------------------- | --------------------------------------------------------------------------- |
+| Step                              | Image              | Purpose                                                                     |
+| --------------------------------- | ------------------ | --------------------------------------------------------------------------- |
 | `rosa-seaplane-resolve-ocp-image` | `rosa-seaplane-ci` | Resolves `OCP_RELEASE_STREAM` to an OCP release pullspec (no-op when unset) |
-| `rosa-seaplane-image-push`        | `ocp/4.21:cli`       | Copies CI-built image to quay.io using `oc image mirror`                    |
+| `rosa-seaplane-image-push`        | `ocp/4.21:cli`     | Copies CI-built image to quay.io using `oc image mirror`                    |
 | `rosa-seaplane-provision`         | `rosa-seaplane-ci` | Calls ephemeral provider with YAML overrides, provisions environment        |
 | `rosa-seaplane-e2e`               | `rosa-seaplane-ci` | Clones this repo, runs `./ci/e2e-tests.sh`                                  |
 | `rosa-seaplane-teardown`          | `rosa-seaplane-ci` | Clones this repo, runs teardown                                             |
@@ -178,7 +178,7 @@ Components that deploy through **Terraform** (not ArgoCD Helm) and/or have **mul
 | --------------- | -------------------------------------- | ------------------------------------------------- |
 | Image count     | 1 (or 2 for API)                       | 2 (Lambda + Runner)                               |
 | Override target | `argocd/config/.../values.yaml` (Helm) | `config/defaults.yaml` (Terraform via render.py)  |
-| Image push step | `rosa-seaplane-image-push` (shared)  | Same step — uses `ROSA_REGIONAL_EXTRA_COMPONENTS` |
+| Image push step | `rosa-seaplane-image-push` (shared)    | Same step — uses `ROSA_REGIONAL_EXTRA_COMPONENTS` |
 | Placeholders    | `IMAGE_REPO`, `IMAGE_TAG`              | `IMAGE_REPO`, `IMAGE_TAG` (per-image, same tag)   |
 
 #### `ROSA_REGIONAL_EXTRA_COMPONENTS` for ZOA
@@ -222,16 +222,16 @@ ephemeral environment. Two images from HyperShift are involved, deployed indepen
 | Image                 | Deployed as                                        | Override target                                           |
 | --------------------- | -------------------------------------------------- | --------------------------------------------------------- |
 | `hypershift-operator` | HyperShift operator (HO) on the Management Cluster | `argocd/config/management-cluster/hypershift/values.yaml` |
-| `hypershift`          | Control-plane-operator (CPO) on hosted clusters    | `argocd/config/regional-cluster/seaplane/values.yaml`   |
+| `hypershift`          | Control-plane-operator (CPO) on hosted clusters    | `argocd/config/regional-cluster/seaplane/values.yaml`     |
 
 #### Test matrix
 
 The two flows differ in which images they override and which OCP payload they run against (see [OCP release image selection](#ocp-release-image-selection) for the stream values):
 
-| Flow                      | Trigger                                          | HO (operator)                          | CPO (`hypershift`)                | OCP payload            |
-| ------------------------- | ------------------------------------------------ | -------------------------------------- | --------------------------------- | ---------------------- |
+| Flow                      | Trigger                                        | HO (operator)                          | CPO (`hypershift`)                | OCP payload            |
+| ------------------------- | ---------------------------------------------- | -------------------------------------- | --------------------------------- | ---------------------- |
 | **Pre-merge** (presubmit) | `/test e2e-rosa-seaplane` on a PR (`optional`) | PR build                               | PR build                          | `ocp-branch-candidate` |
-| **Nightly** (periodic)    | daily at 08:00 UTC, per `release-X.Y` branch     | published `hypershift-operator:latest` | from OCP payload (not overridden) | `ocp-branch-nightly`   |
+| **Nightly** (periodic)    | daily at 08:00 UTC, per `release-X.Y` branch   | published `hypershift-operator:latest` | from OCP payload (not overridden) | `ocp-branch-nightly`   |
 
 - **Pre-merge** overrides **both** HO and CPO from the one PR build (via
   `ROSA_REGIONAL_EXTRA_COMPONENTS`), so a developer validates their exact change end-to-end

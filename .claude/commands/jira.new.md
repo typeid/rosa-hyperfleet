@@ -18,8 +18,8 @@ Create a new Jira issue in the ROSAENG project with the correct Component pre-fi
 
 Detect the current repository from the working directory or `git remote get-url origin`. Map it to a short label:
 
-| Remote contains       | Repo label            |
-| --------------------- | --------------------- |
+| Remote contains     | Repo label          |
+| ------------------- | ------------------- |
 | `rosa-seaplane-cli` | `rosa-seaplane-cli` |
 | `rosa-seaplane-api` | `rosa-seaplane-api` |
 | `rosa-seaplane`     | `rosa-seaplane`     |

@@ -20,16 +20,16 @@ This document covers **AWS infrastructure-level logs** — logs produced by AWS 
 
 ## Regional Cluster Account
 
-| AWS Service                      | Log Group Name                                           | Terraform Module    | Log Level                                               | Retention | KMS                            |
-| -------------------------------- | -------------------------------------------------------- | ------------------- | ------------------------------------------------------- | --------- | ------------------------------ |
-| EKS Control Plane                | `/aws/eks/${cluster_id}/cluster`                         | `eks-cluster`       | api, audit, authenticator, controllerManager, scheduler | 365 days  | `aws_kms_key.cloudwatch_logs`  |
-| ECS Bootstrap                    | `/ecs/${cluster_id}/bootstrap`                           | `ecs-bootstrap`     | Container stdout/stderr                                 | 365 days  | `aws_kms_key.bootstrap_logs`   |
-| ECS Bastion                      | `/ecs/${cluster_id}/bastion`                             | `bastion`           | Container stdout/stderr + ECS Exec                      | 365 days  | `aws_kms_key.bastion_logs`     |
-| Seaplane DB RDS (postgresql)   | `/aws/rds/instance/${regional_id}-seaplane/postgresql` | `seaplane-db`     | postgresql                                              | 365 days  | `aws_kms_key.rds_logs`         |
-| Seaplane DB RDS (upgrade)      | `/aws/rds/instance/${regional_id}-seaplane/upgrade`    | `seaplane-db`     | upgrade                                                 | 365 days  | `aws_kms_key.rds_logs`         |
-| Platform API Gateway (access)    | `/aws/api-gateway/${regional_id}/${stage}/access`        | `api-gateway`       | Structured JSON (requestId, caller, status, latency)    | 365 days  | `aws_kms_key.api_gateway_logs` |
-| Platform API Gateway (execution) | `API-Gateway-Execution-Logs_${api_id}/${stage}`          | `api-gateway`       | ERROR                                                   | 365 days  | `aws_kms_key.api_gateway_logs` |
-| RHOBS API Gateway (access)       | `/aws/api-gateway/${regional_id}-rhobs/${stage}/access`  | `rhobs-api-gateway` | Structured JSON (requestId, caller, status, latency)    | 365 days  | `aws_kms_key.api_gateway_logs` |
+| AWS Service                      | Log Group Name                                          | Terraform Module    | Log Level                                               | Retention | KMS                            |
+| -------------------------------- | ------------------------------------------------------- | ------------------- | ------------------------------------------------------- | --------- | ------------------------------ |
+| EKS Control Plane                | `/aws/eks/${cluster_id}/cluster`                        | `eks-cluster`       | api, audit, authenticator, controllerManager, scheduler | 365 days  | `aws_kms_key.cloudwatch_logs`  |
+| ECS Bootstrap                    | `/ecs/${cluster_id}/bootstrap`                          | `ecs-bootstrap`     | Container stdout/stderr                                 | 365 days  | `aws_kms_key.bootstrap_logs`   |
+| ECS Bastion                      | `/ecs/${cluster_id}/bastion`                            | `bastion`           | Container stdout/stderr + ECS Exec                      | 365 days  | `aws_kms_key.bastion_logs`     |
+| Seaplane DB RDS (postgresql)     | `/aws/rds/instance/${regional_id}-seaplane/postgresql`  | `seaplane-db`       | postgresql                                              | 365 days  | `aws_kms_key.rds_logs`         |
+| Seaplane DB RDS (upgrade)        | `/aws/rds/instance/${regional_id}-seaplane/upgrade`     | `seaplane-db`       | upgrade                                                 | 365 days  | `aws_kms_key.rds_logs`         |
+| Platform API Gateway (access)    | `/aws/api-gateway/${regional_id}/${stage}/access`       | `api-gateway`       | Structured JSON (requestId, caller, status, latency)    | 365 days  | `aws_kms_key.api_gateway_logs` |
+| Platform API Gateway (execution) | `API-Gateway-Execution-Logs_${api_id}/${stage}`         | `api-gateway`       | ERROR                                                   | 365 days  | `aws_kms_key.api_gateway_logs` |
+| RHOBS API Gateway (access)       | `/aws/api-gateway/${regional_id}-rhobs/${stage}/access` | `rhobs-api-gateway` | Structured JSON (requestId, caller, status, latency)    | 365 days  | `aws_kms_key.api_gateway_logs` |
 
 ## Management Cluster Account
 

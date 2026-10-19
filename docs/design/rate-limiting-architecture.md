@@ -360,7 +360,7 @@ These headers are **injected by API Gateway** after SigV4 validation — they ca
 
 The in-app approach with SigV4 identity is an **upgrade** over ROSA HCP (v1)'s Envoy + Limitador:
 
-| Aspect            | ROSA HCP v1 (Envoy + Limitador)                                        | ROSA Seaplane v2 (In-app + API GW throttle)                           |
+| Aspect            | ROSA HCP v1 (Envoy + Limitador)                                        | ROSA Seaplane v2 (In-app + API GW throttle)                             |
 | ----------------- | ---------------------------------------------------------------------- | ----------------------------------------------------------------------- |
 | Customer identity | Source IP (`X-Forwarded-For`) — unreliable                             | AWS Account ID (SigV4) — trusted, unique                                |
 | Infrastructure    | Envoy sidecar + Limitador (3 replicas) + Redis (2 nodes, HA)           | In-process + small Redis for shared counters (no sidecar, no gRPC)      |

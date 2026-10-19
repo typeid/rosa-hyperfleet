@@ -258,19 +258,19 @@ inspect-logs/
 
 Key namespaces and what to look for:
 
-| Cluster | Namespace      | What to check                                                |
-| ------- | -------------- | ------------------------------------------------------------ |
-| RC      | `seaplane`   | Operator reconciliation, Manifest CR and seaplane-db state |
-| RC      | `platform-api` | API errors, registration failures                            |
-| RC      | `argocd`       | Sync failures, application health                            |
-| MC      | `kube-applier` | DynamoDB Streams connectivity, resource apply status         |
-| MC      | `argocd`       | Sync failures on MC applications                             |
-| MC      | `hypershift`   | HyperShift operator errors                                   |
+| Cluster | Namespace      | What to check                                              |
+| ------- | -------------- | ---------------------------------------------------------- |
+| RC      | `seaplane`     | Operator reconciliation, Manifest CR and seaplane-db state |
+| RC      | `platform-api` | API errors, registration failures                          |
+| RC      | `argocd`       | Sync failures, application health                          |
+| MC      | `kube-applier` | DynamoDB Streams connectivity, resource apply status       |
+| MC      | `argocd`       | Sync failures on MC applications                           |
+| MC      | `hypershift`   | HyperShift operator errors                                 |
 
 **Other dump components** (not Kubernetes namespaces):
 
-| Cluster | Directory   | What to check                                                                         |
-| ------- | ----------- | ------------------------------------------------------------------------------------- |
+| Cluster | Directory   | What to check                                                                       |
+| ------- | ----------- | ----------------------------------------------------------------------------------- |
 | RC      | `db-state/` | Seaplane DB contents — resource summary and individual JSON objects (RC dumps only) |
 
 For resource distribution issues specifically, check:
@@ -527,8 +527,8 @@ When a fix PR already exists from a previous day's failure analysis:
 
 ## Reference: Job History URLs
 
-| Job                    | History URL                                                                                                                                               |
-| ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Job                    | History URL                                                                                                                                             |
+| ---------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `check-docs`           | `https://prow.ci.openshift.org/job-history/gs/test-platform-results/pr-logs/directory/pull-ci-openshift-online-rosa-seaplane-main-check-docs`           |
 | `terraform-validate`   | `https://prow.ci.openshift.org/job-history/gs/test-platform-results/pr-logs/directory/pull-ci-openshift-online-rosa-seaplane-main-terraform-validate`   |
 | `helm-lint`            | `https://prow.ci.openshift.org/job-history/gs/test-platform-results/pr-logs/directory/pull-ci-openshift-online-rosa-seaplane-main-helm-lint`            |
